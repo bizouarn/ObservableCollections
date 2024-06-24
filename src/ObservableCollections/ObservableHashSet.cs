@@ -1,6 +1,5 @@
 using ObservableCollections.Internal;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -8,10 +7,11 @@ using System.Linq;
 namespace ObservableCollections
 {
     // can not implements ISet<T> because set operation can not get added/removed values.
-    public sealed partial class ObservableHashSet<T> : Synchronized, IReadOnlySet<T>, IReadOnlyCollection<T>, IObservableCollection<T>
+    public sealed partial class ObservableHashSet<T> : SynchronizedCollection<T>, IReadOnlySet<T>, IObservableCollection<T>
         where T : notnull
     {
         readonly HashSet<T> set;
+        protected override IReadOnlyCollection<T> Source { get => set; }
 
         public ObservableHashSet()
         {
@@ -33,17 +33,6 @@ namespace ObservableCollections
         }
 
         public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
-
-        public int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return set.Count;
-                }
-            }
-        }
 
         public bool IsReadOnly => false;
 
@@ -246,22 +235,6 @@ namespace ObservableCollections
             {
                 return set.SetEquals(other);
             }
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in set)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

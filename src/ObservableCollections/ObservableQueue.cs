@@ -1,6 +1,5 @@
 ﻿using ObservableCollections.Internal;
 using System.Buffers;
-using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System;
@@ -8,9 +7,10 @@ using System.Collections.Generic;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableQueue<T> : Synchronized, IReadOnlyCollection<T>, IObservableCollection<T>
+    public sealed partial class ObservableQueue<T> : SynchronizedCollection<T>, IObservableCollection<T>
     {
         readonly Queue<T> queue;
+        protected override IReadOnlyCollection<T> Source { get => queue; }
 
         public ObservableQueue()
         {
@@ -28,17 +28,6 @@ namespace ObservableCollections
         }
 
         public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
-
-        public int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return queue.Count;
-                }
-            }
-        }
 
         public void Enqueue(T item)
         {
@@ -196,22 +185,6 @@ namespace ObservableCollections
             {
                 queue.TrimExcess();
             }
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in queue)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

@@ -4,11 +4,12 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableDictionary<TKey, TValue> : Synchronized, IDictionary<TKey, TValue>,
+    public sealed partial class ObservableDictionary<TKey, TValue> : SynchronizedCollection<KeyValuePair<TKey, TValue>>, IDictionary<TKey, TValue>,
         IReadOnlyObservableDictionary<TKey, TValue>
         where TKey : notnull
     {
         readonly Dictionary<TKey, TValue> dictionary;
+        protected override IReadOnlyCollection<KeyValuePair<TKey, TValue>> Source { get => dictionary; }
 
         public ObservableDictionary()
         {
@@ -78,17 +79,6 @@ namespace ObservableCollections
                 lock (SyncRoot)
                 {
                     return dictionary.Values;
-                }
-            }
-        }
-
-        public int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return dictionary.Count;
                 }
             }
         }
@@ -200,22 +190,6 @@ namespace ObservableCollections
             {
                 return dictionary.TryGetValue(key, out value);
             }
-        }
-
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in dictionary)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

@@ -1,16 +1,16 @@
 ﻿using ObservableCollections.Internal;
 using System;
 using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableStack<T> : Synchronized, IReadOnlyCollection<T>, IObservableCollection<T>
+    public sealed partial class ObservableStack<T> : SynchronizedCollection<T>, IObservableCollection<T>
     {
         readonly Stack<T> stack;
+        protected override IReadOnlyCollection<T> Source { get => stack; }
 
         public ObservableStack()
         {
@@ -28,17 +28,6 @@ namespace ObservableCollections
         }
 
         public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
-
-        public int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return stack.Count;
-                }
-            }
-        }
 
         public void Push(T item)
         {
@@ -193,22 +182,6 @@ namespace ObservableCollections
             {
                 stack.TrimExcess();
             }
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in stack)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

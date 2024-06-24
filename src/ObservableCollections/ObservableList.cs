@@ -1,15 +1,15 @@
 ﻿using ObservableCollections.Internal;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableList<T> : Synchronized, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
+    public sealed partial class ObservableList<T> : SynchronizedCollection<T>, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
     {
         readonly List<T> list;
+        protected override IReadOnlyCollection<T> Source { get => list; }
 
         public ObservableList()
         {
@@ -42,17 +42,6 @@ namespace ObservableCollections
                     var oldValue = list[index];
                     list[index] = value;
                     CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Replace(value, oldValue, index, index));
-                }
-            }
-        }
-
-        public int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return list.Count;
                 }
             }
         }
@@ -133,23 +122,7 @@ namespace ObservableCollections
                 list.CopyTo(array, arrayIndex);
             }
         }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in list)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
+        
         public void ForEach(Action<T> action)
         {
             lock (SyncRoot)

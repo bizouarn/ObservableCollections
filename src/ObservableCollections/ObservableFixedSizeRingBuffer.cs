@@ -1,13 +1,13 @@
 ﻿using ObservableCollections.Internal;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableFixedSizeRingBuffer<T> : Synchronized, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
+    public sealed partial class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T>, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
     {
         readonly RingBuffer<T> buffer;
+        protected override IReadOnlyCollection<T> Source { get => buffer; }
         readonly int capacity;
 
         public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
@@ -55,17 +55,6 @@ namespace ObservableCollections
         }
 
         public int Capacity => capacity;
-
-        public int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return buffer.Count;
-                }
-            }
-        }
 
         public void AddFirst(T item)
         {
@@ -300,22 +289,6 @@ namespace ObservableCollections
             {
                 return buffer.BinarySearch(item, comparer);
             }
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in buffer)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
 
         public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)

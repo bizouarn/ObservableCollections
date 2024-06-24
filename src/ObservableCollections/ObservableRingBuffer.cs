@@ -1,13 +1,13 @@
 ﻿using ObservableCollections.Internal;
 using System;
 using System.Collections.Generic;
-using System.Collections;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableRingBuffer<T> : Synchronized, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
+    public sealed partial class ObservableRingBuffer<T> : SynchronizedCollection<T>, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
     {
         readonly RingBuffer<T> buffer;
+        protected override IReadOnlyCollection<T> Source { get => buffer; }
 
         public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
 
@@ -39,17 +39,6 @@ namespace ObservableCollections
                     var oldValue = buffer[index];
                     buffer[index] = value;
                     CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Replace(value, oldValue, index, index));
-                }
-            }
-        }
-
-        public int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return buffer.Count;
                 }
             }
         }
@@ -212,22 +201,6 @@ namespace ObservableCollections
             {
                 return buffer.BinarySearch(item, comparer);
             }
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in buffer)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }
