@@ -4,12 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
+    public sealed partial class ObservableDictionary<TKey, TValue> : Synchronized, IDictionary<TKey, TValue>,
         IReadOnlyObservableDictionary<TKey, TValue>
         where TKey : notnull
     {
         readonly Dictionary<TKey, TValue> dictionary;
-        public object SyncRoot { get; } = new object();
 
         public ObservableDictionary()
         {

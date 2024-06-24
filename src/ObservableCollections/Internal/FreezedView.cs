@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace ObservableCollections.Internal
 {
-    internal sealed class FreezedView<T, TView> : ISynchronizedView<T, TView>
+    internal sealed class FreezedView<T, TView> : Synchronized, ISynchronizedView<T, TView>
     {
         readonly bool reverse;
         readonly List<(T, TView)> list;
@@ -22,8 +22,6 @@ namespace ObservableCollections.Internal
 
         public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
         public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
-
-        public object SyncRoot { get; } = new object();
 
         public FreezedView(IEnumerable<T> source, Func<T, TView> selector, bool reverse)
         {
@@ -105,7 +103,7 @@ namespace ObservableCollections.Internal
         }
     }
 
-    internal sealed class FreezedSortableView<T, TView> : ISortableSynchronizedView<T, TView>
+    internal sealed class FreezedSortableView<T, TView> : Synchronized, ISortableSynchronizedView<T, TView>
     {
         readonly (T, TView)[] array;
 
@@ -118,8 +116,6 @@ namespace ObservableCollections.Internal
 
         public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
         public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
-
-        public object SyncRoot { get; } = new object();
 
         public FreezedSortableView(IEnumerable<T> source, Func<T, TView> selector)
         {

@@ -14,7 +14,7 @@ namespace ObservableCollections
             return new View<TView>(this, transform, reverse);
         }
 
-        class View<TView> : ISynchronizedView<T, TView>
+        class View<TView> : Synchronized, ISynchronizedView<T, TView>
         {
             readonly ObservableStack<T> source;
             readonly Func<T, TView> selector;
@@ -25,8 +25,6 @@ namespace ObservableCollections
 
             public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
             public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
-
-            public object SyncRoot { get; }
 
             public ISynchronizedViewFilter<T, TView> CurrentFilter
             {
@@ -39,7 +37,6 @@ namespace ObservableCollections
                 this.selector = selector;
                 this.reverse = reverse;
                 this.filter = SynchronizedViewFilter<T, TView>.Null;
-                this.SyncRoot = new object();
                 lock (source.SyncRoot)
                 {
                     this.stack = new Stack<(T, TView)>(source.stack.Select(x => (x, selector(x))));

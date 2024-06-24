@@ -14,7 +14,7 @@ namespace ObservableCollections
             return new View<TView>(this, transform);
         }
 
-        sealed class View<TView> : ISynchronizedView<T, TView>
+        sealed class View<TView> : Synchronized, ISynchronizedView<T, TView>
         {
             public ISynchronizedViewFilter<T, TView> CurrentFilter
             {
@@ -30,14 +30,11 @@ namespace ObservableCollections
             public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
             public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
 
-            public object SyncRoot { get; }
-
             public View(ObservableHashSet<T> source, Func<T, TView> selector)
             {
                 this.source = source;
                 this.selector = selector;
                 this.filter = SynchronizedViewFilter<T, TView>.Null;
-                this.SyncRoot = new object();
                 lock (source.SyncRoot)
                 {
                     this.dict = source.set.ToDictionary(x => x, x => (x, selector(x)));

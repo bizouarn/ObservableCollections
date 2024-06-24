@@ -14,7 +14,7 @@ namespace ObservableCollections
             return new View<TView>(this, transform, reverse);
         }
 
-        sealed class View<TView> : ISynchronizedView<T, TView>
+        sealed class View<TView> : Synchronized, ISynchronizedView<T, TView>
         {
             public ISynchronizedViewFilter<T, TView> CurrentFilter
             {
@@ -34,15 +34,12 @@ namespace ObservableCollections
             public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
             public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
 
-            public object SyncRoot { get; }
-
             public View(ObservableList<T> source, Func<T, TView> selector, bool reverse)
             {
                 this.source = source;
                 this.selector = selector;
                 this.reverse = reverse;
                 this.filter = SynchronizedViewFilter<T, TView>.Null;
-                this.SyncRoot = new object();
                 lock (source.SyncRoot)
                 {
                     this.list = source.list.Select(x => (x, selector(x))).ToList();

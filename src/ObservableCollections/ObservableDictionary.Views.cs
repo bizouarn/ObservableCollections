@@ -15,7 +15,7 @@ namespace ObservableCollections
             return new View<TView>(this, transform);
         }
 
-        class View<TView> : ISynchronizedView<KeyValuePair<TKey, TValue>, TView>
+        class View<TView> : Synchronized, ISynchronizedView<KeyValuePair<TKey, TValue>, TView>
         {
             readonly ObservableDictionary<TKey, TValue> source;
             readonly Func<KeyValuePair<TKey, TValue>, TView> selector;
@@ -27,7 +27,6 @@ namespace ObservableCollections
                 this.source = source;
                 this.selector = selector;
                 this.filter = SynchronizedViewFilter<KeyValuePair<TKey, TValue>, TView>.Null;
-                this.SyncRoot = new object();
                 lock (source.SyncRoot)
                 {
                     this.dict = source.dictionary.ToDictionary(x => x.Key, x => (x.Value, selector(x)));
@@ -35,7 +34,6 @@ namespace ObservableCollections
                 }
             }
 
-            public object SyncRoot { get; }
             public event NotifyCollectionChangedEventHandler<KeyValuePair<TKey, TValue>>? RoutingCollectionChanged;
             public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
 

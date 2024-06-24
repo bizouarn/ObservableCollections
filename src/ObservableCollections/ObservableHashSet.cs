@@ -8,11 +8,10 @@ using System.Linq;
 namespace ObservableCollections
 {
     // can not implements ISet<T> because set operation can not get added/removed values.
-    public sealed partial class ObservableHashSet<T> : IReadOnlySet<T>, IReadOnlyCollection<T>, IObservableCollection<T>
+    public sealed partial class ObservableHashSet<T> : Synchronized, IReadOnlySet<T>, IReadOnlyCollection<T>, IObservableCollection<T>
         where T : notnull
     {
         readonly HashSet<T> set;
-        public object SyncRoot { get; } = new object();
 
         public ObservableHashSet()
         {

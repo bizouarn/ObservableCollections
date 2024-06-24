@@ -8,10 +8,9 @@ namespace ObservableCollections
 {
     public delegate void NotifyCollectionChangedEventHandler<T>(in NotifyCollectionChangedEventArgs<T> e);
 
-    public interface IObservableCollection<T> : IReadOnlyCollection<T>
+    public interface IObservableCollection<T> : ISynchronized, IReadOnlyCollection<T>
     {
         event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
-        object SyncRoot { get; }
         ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false);
     }
 
@@ -26,9 +25,8 @@ namespace ObservableCollections
         ISortableSynchronizedView<T, TView> CreateSortableView<TView>(Func<T, TView> transform);
     }
 
-    public interface ISynchronizedView<T, TView> : IReadOnlyCollection<(T Value, TView View)>, IDisposable
+    public interface ISynchronizedView<T, TView> : ISynchronized, IReadOnlyCollection<(T Value, TView View)>, IDisposable
     {
-        object SyncRoot { get; }
         ISynchronizedViewFilter<T, TView> CurrentFilter { get; }
 
         event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;

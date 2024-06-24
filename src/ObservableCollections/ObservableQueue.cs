@@ -8,10 +8,9 @@ using System.Collections.Generic;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableQueue<T> : IReadOnlyCollection<T>, IObservableCollection<T>
+    public sealed partial class ObservableQueue<T> : Synchronized, IReadOnlyCollection<T>, IObservableCollection<T>
     {
         readonly Queue<T> queue;
-        public object SyncRoot { get; } = new object();
 
         public ObservableQueue()
         {

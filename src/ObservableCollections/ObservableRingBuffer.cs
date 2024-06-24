@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace ObservableCollections
 {
-    public sealed partial class ObservableRingBuffer<T> : IList<T>, IReadOnlyList<T>, IObservableCollection<T>
+    public sealed partial class ObservableRingBuffer<T> : Synchronized, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
     {
         readonly RingBuffer<T> buffer;
 
@@ -22,8 +22,6 @@ namespace ObservableCollections
         }
 
         public bool IsReadOnly => false;
-
-        public object SyncRoot { get; } = new object();
 
         public T this[int index]
         {

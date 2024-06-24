@@ -15,7 +15,7 @@ namespace ObservableCollections
         }
 
         // used with ObservableFixedSizeRingBuffer
-        internal sealed class View<TView> : ISynchronizedView<T, TView>
+        internal sealed class View<TView> : Synchronized, ISynchronizedView<T, TView>
         {
             public ISynchronizedViewFilter<T, TView> CurrentFilter
             {
@@ -32,15 +32,12 @@ namespace ObservableCollections
             public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
             public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
 
-            public object SyncRoot { get; }
-
             public View(IObservableCollection<T> source, Func<T, TView> selector, bool reverse)
             {
                 this.source = source;
                 this.selector = selector;
                 this.reverse = reverse;
                 this.filter = SynchronizedViewFilter<T, TView>.Null;
-                this.SyncRoot = new object();
                 lock (source.SyncRoot)
                 {
                     this.ringBuffer = new RingBuffer<(T, TView)>(source.Select(x => (x, selector(x))));

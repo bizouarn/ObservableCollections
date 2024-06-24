@@ -5,7 +5,7 @@ using System.Collections.Specialized;
 
 namespace ObservableCollections.Internal
 {
-    internal class SortedViewViewComparer<T, TKey, TView> : ISynchronizedView<T, TView>
+    internal class SortedViewViewComparer<T, TKey, TView> : Synchronized, ISynchronizedView<T, TView>
         where TKey : notnull
     {
         readonly IObservableCollection<T> source;
@@ -18,8 +18,6 @@ namespace ObservableCollections.Internal
 
         public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
         public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
-
-        public object SyncRoot { get; } = new object();
 
         public ISynchronizedViewFilter<T, TView> CurrentFilter
         {
