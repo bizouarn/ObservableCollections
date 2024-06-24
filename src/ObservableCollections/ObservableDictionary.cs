@@ -182,16 +182,12 @@ namespace ObservableCollections
         {
             lock (SyncRoot)
             {
-                if (dictionary.TryGetValue(item.Key, out var value))
+                if (dictionary.TryGetValue(item.Key, out var value)
+                    && EqualityComparer<TValue>.Default.Equals(value, item.Value)
+                    && dictionary.Remove(item.Key, out var value2))
                 {
-                    if (EqualityComparer<TValue>.Default.Equals(value, item.Value))
-                    {
-                        if (dictionary.Remove(item.Key, out var value2))
-                        {
-                            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<KeyValuePair<TKey, TValue>>.Remove(new KeyValuePair<TKey, TValue>(item.Key, value2), -1));
-                            return true;
-                        }
-                    }
+                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<KeyValuePair<TKey, TValue>>.Remove(new KeyValuePair<TKey, TValue>(item.Key, value2), -1));
+                    return true;
                 }
                 return false;
             }
