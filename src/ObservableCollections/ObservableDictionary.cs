@@ -121,6 +121,21 @@ namespace ObservableCollections
             Add(item.Key, item.Value);
         }
 
+#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+        public bool TryAdd(TKey key, TValue value)
+        {
+            lock (SyncRoot)
+            {
+                if (dictionary.TryAdd(key, value))
+                {
+                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<KeyValuePair<TKey, TValue>>.Add(new KeyValuePair<TKey, TValue>(key, value), -1));
+                    return true;
+                }
+                return false;
+            }
+        }
+#endif
+
         public void Clear()
         {
             lock (SyncRoot)
