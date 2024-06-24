@@ -121,7 +121,7 @@ namespace ObservableCollections.Internal
 
             public IEnumerator<T> GetEnumerator()
             {
-                for (int i = 0; i < count; i++)
+                for (var i = 0; i < count; i++)
                 {
                     yield return array[i];
                 }

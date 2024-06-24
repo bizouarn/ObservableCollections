@@ -5,8 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
 
 namespace ObservableCollections
 {
@@ -127,7 +125,7 @@ namespace ObservableCollections
                 var dest = ArrayPool<T>.Shared.Rent(count);
                 try
                 {
-                    for (int i = 0; i < count; i++)
+                    for (var i = 0; i < count; i++)
                     {
                         dest[i] = queue.Dequeue();
                     }
@@ -145,7 +143,7 @@ namespace ObservableCollections
         {
             lock (SyncRoot)
             {
-                for (int i = 0; i < dest.Length; i++)
+                for (var i = 0; i < dest.Length; i++)
                 {
                     dest[i] = queue.Dequeue();
                 }

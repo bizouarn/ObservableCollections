@@ -185,7 +185,7 @@ namespace ObservableCollections
                                 }
                                 else
                                 {
-                                    for (int i = 0; i < e.OldItems.Length; i++)
+                                    for (var i = 0; i < e.OldItems.Length; i++)
                                     {
                                         var v = ringBuffer.RemoveFirst();
                                         filter.InvokeOnRemove(v, 0);
@@ -203,7 +203,7 @@ namespace ObservableCollections
                                 }
                                 else
                                 {
-                                    for (int i = 0; i < e.OldItems.Length; i++)
+                                    for (var i = 0; i < e.OldItems.Length; i++)
                                     {
                                         var index = ringBuffer.Count - 1;
                                         var v = ringBuffer.RemoveLast();

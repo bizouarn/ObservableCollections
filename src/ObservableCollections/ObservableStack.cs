@@ -122,7 +122,7 @@ namespace ObservableCollections
                 var dest = ArrayPool<T>.Shared.Rent(count);
                 try
                 {
-                    for (int i = 0; i < count; i++)
+                    for (var i = 0; i < count; i++)
                     {
                         dest[i] = stack.Pop();
                     }
@@ -140,7 +140,7 @@ namespace ObservableCollections
         {
             lock (SyncRoot)
             {
-                for (int i = 0; i < dest.Length; i++)
+                for (var i = 0; i < dest.Length; i++)
                 {
                     dest[i] = stack.Pop();
                 }

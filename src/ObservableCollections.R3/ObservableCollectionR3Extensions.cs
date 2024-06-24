@@ -280,7 +280,6 @@ sealed class ObservableDictionaryAdd<TKey, TValue>(
                 }
                 else
                 {
-                    var i = eventArgs.NewStartingIndex;
                     foreach (var item in eventArgs.NewItems)
                     {
                         observer.OnNext(new DictionaryAddEvent<TKey, TValue>(item.Key, item.Value));
@@ -318,7 +317,6 @@ sealed class ObservableDictionaryRemove<TKey, TValue>(
                 }
                 else
                 {
-                    var i = eventArgs.NewStartingIndex;
                     foreach (var item in eventArgs.NewItems)
                     {
                         observer.OnNext(new DictionaryRemoveEvent<TKey, TValue>(item.Key, item.Value));
@@ -377,9 +375,11 @@ abstract class ObservableCollectionObserverBase<T, TEvent> : IDisposable
         {
             cancellationTokenRegistration = cancellationToken.UnsafeRegister(static state =>
             {
-                var s = (ObservableCollectionObserverBase<T, TEvent>)state!;
-                s.observer.OnCompleted();
-                s.Dispose();
+                if (state is ObservableCollectionObserverBase<T, TEvent> s)
+                {
+                    s.observer.OnCompleted();
+                    s.Dispose();
+                }
             }, this);
         }
     }

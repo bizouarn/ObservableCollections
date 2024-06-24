@@ -1,10 +1,5 @@
-﻿using FluentAssertions;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace ObservableCollections.Tests
 {
@@ -133,20 +128,20 @@ namespace ObservableCollections.Tests
             empty.ToArray().Should().BeEmpty();
 
 
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var buffer = new RingBuffer<int>();
-                for (int j = 0; j < i; j++)
+                for (var j = 0; j < i; j++)
                 {
                     buffer.AddLast(j);
                 }
                 buffer.ToArray().Should().Equal(Enumerable.Range(0, i).ToArray());
             }
 
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var buffer = new RingBuffer<int>();
-                for (int j = 0; j < i; j++)
+                for (var j = 0; j < i; j++)
                 {
                     buffer.AddFirst(j);
                 }
@@ -198,7 +193,7 @@ namespace ObservableCollections.Tests
             }
 
             {
-                for (int i = 0; i < 50; i++)
+                for (var i = 0; i < 50; i++)
                 {
                     buffer.BinarySearch(i).Should().Be(multiL.BinarySearch(i));
                 }

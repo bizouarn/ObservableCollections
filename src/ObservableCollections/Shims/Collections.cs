@@ -1,9 +1,5 @@
 ﻿#nullable disable
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace System.Collections.Generic
 {
     internal static class CollectionExtensions
@@ -16,20 +12,12 @@ namespace System.Collections.Generic
 
         public static bool Remove<TKey, TValue>(this SortedDictionary<TKey, TValue> dict, TKey key, out TValue value)
         {
-            if (dict.TryGetValue(key, out value))
-            {
-                return dict.Remove(key);
-            }
-            return false;
+            return dict.TryGetValue(key, out value) && dict.Remove(key);
         }
 
         public static bool Remove<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, out TValue value)
         {
-            if (dict.TryGetValue(key, out value))
-            {
-                return dict.Remove(key);
-            }
-            return false;
+            return dict.TryGetValue(key, out value) && dict.Remove(key);
         }
 
 #if !NET6_0_OR_GREATER

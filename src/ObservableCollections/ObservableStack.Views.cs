@@ -155,7 +155,7 @@ namespace ObservableCollections
                             else
                             {
                                 var len = e.OldItems.Length;
-                                for (int i = 0; i < len; i++)
+                                for (var i = 0; i < len; i++)
                                 {
                                     var v = stack.Pop();
                                     filter.InvokeOnRemove(v.Item1, v.Item2, 0);

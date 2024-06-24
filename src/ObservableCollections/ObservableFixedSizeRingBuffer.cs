@@ -134,7 +134,7 @@ namespace ObservableCollections
                         var remCount = Math.Min(buffer.Count, buffer.Count + xs.Span.Length - capacity);
                         using (var ys = new ResizableArray<T>(remCount))
                         {
-                            for (int i = 0; i < remCount; i++)
+                            for (var i = 0; i < remCount; i++)
                             {
                                 ys.Add(buffer.RemoveFirst());
                             }
@@ -169,7 +169,7 @@ namespace ObservableCollections
                     var remCount = Math.Min(buffer.Count, buffer.Count + items.Length - capacity);
                     using (var ys = new ResizableArray<T>(remCount))
                     {
-                        for (int i = 0; i < remCount; i++)
+                        for (var i = 0; i < remCount; i++)
                         {
                             ys.Add(buffer.RemoveFirst());
                         }
@@ -203,7 +203,7 @@ namespace ObservableCollections
                     var remCount = Math.Min(buffer.Count, buffer.Count + items.Length - capacity);
                     using (var ys = new ResizableArray<T>(remCount))
                     {
-                        for (int i = 0; i < remCount; i++)
+                        for (var i = 0; i < remCount; i++)
                         {
                             ys.Add(buffer.RemoveFirst());
                         }

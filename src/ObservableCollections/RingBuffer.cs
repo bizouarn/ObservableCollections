@@ -121,7 +121,7 @@ namespace ObservableCollections
             var index = head & mask;
             var v = buffer[index];
             buffer[index] = default!;
-            head = head + 1;
+            head += 1;
             count--;
             return v;
         }
@@ -189,7 +189,7 @@ namespace ObservableCollections
             if (end > start)
             {
                 // start...end
-                for (int i = start; i < end; i++)
+                for (var i = start; i < end; i++)
                 {
                     yield return buffer[i];
                 }
@@ -197,12 +197,12 @@ namespace ObservableCollections
             else
             {
                 // start...
-                for (int i = start; i < buffer.Length; i++)
+                for (var i = start; i < buffer.Length; i++)
                 {
                     yield return buffer[i];
                 }
                 // 0...end
-                for (int i = 0; i < end; i++)
+                for (var i = 0; i < end; i++)
                 {
                     yield return buffer[i];
                 }
@@ -219,7 +219,7 @@ namespace ObservableCollections
             if (end > start)
             {
                 // end...start
-                for (int i = end - 1; i >= start; i--)
+                for (var i = end - 1; i >= start; i--)
                 {
                     yield return buffer[i];
                 }
@@ -227,13 +227,13 @@ namespace ObservableCollections
             else
             {
                 // end...0
-                for (int i = end - 1; i >= 0; i--)
+                for (var i = end - 1; i >= 0; i--)
                 {
                     yield return buffer[i];
                 }
 
                 // ...start
-                for (int i = buffer.Length - 1; i >= start; i--)
+                for (var i = buffer.Length - 1; i >= start; i--)
                 {
                     yield return buffer[i];
                 }
@@ -324,7 +324,7 @@ namespace ObservableCollections
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable<T>)this).GetEnumerator();
+            return this.GetEnumerator();
         }
 
         [DoesNotReturn]
@@ -379,26 +379,12 @@ namespace ObservableCollections
                     }
                 }
 
-                if (secondEnumerator.MoveNext())
-                {
-                    return true;
-                }
-                return false;
+                return secondEnumerator.MoveNext();
             }
 
             public T Current
             {
-                get
-                {
-                    if (useFirst)
-                    {
-                        return firstEnumerator.Current;
-                    }
-                    else
-                    {
-                        return secondEnumerator.Current;
-                    }
-                }
+                get { return useFirst ? firstEnumerator.Current : secondEnumerator.Current; }
             }
         }
     }

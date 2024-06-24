@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Components;
-using ObservableCollections;
+﻿using ObservableCollections;
 
 namespace BlazorApp.Pages;
 

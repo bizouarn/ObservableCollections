@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 
 namespace ObservableCollections.Internal
 {
@@ -203,9 +202,9 @@ namespace ObservableCollections.Internal
                         if (viewMap.Remove(oldId, out var oldView))
                         {
                             var oldKey = (oldView, oldId);
-                            if (list.TryGetValue(oldKey, out var v))
+                            oldIndex = list.IndexOfKey(oldKey);
+                            if (oldIndex > -1)
                             {
-                                oldIndex = list.IndexOfKey(oldKey);
                                 list.RemoveAt(oldIndex);
                             }
                         }
