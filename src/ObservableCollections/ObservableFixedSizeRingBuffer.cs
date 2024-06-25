@@ -194,14 +194,6 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
         }
     }
 
-    public T[] ToArray()
-    {
-        lock (SyncRoot)
-        {
-            return Source.ToArray();
-        }
-    }
-
     public int BinarySearch(T item)
     {
         lock (SyncRoot)

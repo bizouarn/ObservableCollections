@@ -155,14 +155,6 @@ public sealed partial class ObservableQueue<T> : SynchronizedCollection<Queue<T>
         }
     }
 
-    public T[] ToArray()
-    {
-        lock (SyncRoot)
-        {
-            return Source.ToArray();
-        }
-    }
-
     public void TrimExcess()
     {
         lock (SyncRoot)

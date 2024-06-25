@@ -111,14 +111,6 @@ public sealed partial class ObservableRingBuffer<T> : SynchronizedList<RingBuffe
         AddLast(item);
     }
 
-    public T[] ToArray()
-    {
-        lock (SyncRoot)
-        {
-            return Source.ToArray();
-        }
-    }
-
     public int BinarySearch(T item)
     {
         lock (SyncRoot)

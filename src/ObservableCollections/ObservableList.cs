@@ -104,7 +104,7 @@ public sealed partial class ObservableList<T> : SynchronizedList<List<T>, T>, IO
         lock (SyncRoot)
         {
 #if NET5_0_OR_GREATER
-                var range = CollectionsMarshal.AsSpan(Source).Slice(index, count);
+            var range = CollectionsMarshal.AsSpan(Source).Slice(index, count);
 #else
             var range = Source.GetRange(index, count);
 #endif

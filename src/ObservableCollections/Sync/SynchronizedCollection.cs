@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ObservableCollections;
 
@@ -28,6 +29,14 @@ public abstract class SynchronizedCollection<TCol, TSub> : Synchronized, IReadOn
             {
                 return Source.Count;
             }
+        }
+    }
+
+    public TSub[] ToArray()
+    {
+        lock (SyncRoot)
+        {
+            return Source.ToArray();
         }
     }
 }

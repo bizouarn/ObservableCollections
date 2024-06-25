@@ -151,14 +151,6 @@ public sealed partial class ObservableStack<T> : SynchronizedCollection<Stack<T>
         }
     }
 
-    public T[] ToArray()
-    {
-        lock (SyncRoot)
-        {
-            return Source.ToArray();
-        }
-    }
-
     public void TrimExcess()
     {
         lock (SyncRoot)
