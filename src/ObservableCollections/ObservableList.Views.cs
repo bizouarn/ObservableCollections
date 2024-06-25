@@ -13,67 +13,14 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
         return new View<TView>(this, transform);
     }
 
-    private sealed class View<TView> : SynchronizedViewBase<T, TView>
+    private sealed class View<TView> : SynchronizedCollectionView<T, TView, List<(T, TView)>>
     {
         private readonly Func<T, TView> selector;
-        private readonly List<(T, TView)> list;
 
-        public View(ObservableList<T> source, Func<T, TView> selector) : base(source)
+        public View(ObservableList<T> source, Func<T, TView> selector) 
+            : base(source, source.Source.Select(x => (x, selector(x))).ToList())
         {
             this.selector = selector;
-            lock (source.SyncRoot)
-            {
-                list = source.Source.Select(x => (x, selector(x))).ToList();
-            }
-        }
-
-        public override int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return list.Count;
-                }
-            }
-        }
-
-        public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter,
-            bool invokeAddEventForCurrentElements = false)
-        {
-            lock (SyncRoot)
-            {
-                this.filter = filter;
-                for (var i = 0; i < list.Count; i++)
-                {
-                    var (value, view) = list[i];
-                    if (invokeAddEventForCurrentElements)
-                        filter.InvokeOnAdd(value, view, i);
-                    else
-                        filter.InvokeOnAttach(value, view);
-                }
-            }
-        }
-
-        public override void ResetFilter(Action<T, TView>? resetAction)
-        {
-            lock (SyncRoot)
-            {
-                filter = SynchronizedViewFilter<T, TView>.Null;
-                if (resetAction != null)
-                    foreach (var (item, view) in list)
-                        resetAction(item, view);
-            }
-        }
-
-        public override IEnumerator<(T, TView)> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in list)
-                    if (filter.IsMatch(item.Item1, item.Item2))
-                        yield return item;
-            }
         }
 
         protected override void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
@@ -84,12 +31,12 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
                 {
                     case NotifyCollectionChangedAction.Add:
                         // Add
-                        if (e.NewStartingIndex == list.Count)
+                        if (e.NewStartingIndex == View.Count)
                         {
                             if (e.IsSingleItem)
                             {
                                 var v = (e.NewItem, selector(e.NewItem));
-                                list.Add(v);
+                                View.Add(v);
                                 filter.InvokeOnAdd(v, e.NewStartingIndex);
                             }
                             else
@@ -98,7 +45,7 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
                                 foreach (var item in e.NewItems)
                                 {
                                     var v = (item, selector(item));
-                                    list.Add(v);
+                                    View.Add(v);
                                     filter.InvokeOnAdd(v, i++);
                                 }
                             }
@@ -109,7 +56,7 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
                             if (e.IsSingleItem)
                             {
                                 var v = (e.NewItem, selector(e.NewItem));
-                                list.Insert(e.NewStartingIndex, v);
+                                View.Insert(e.NewStartingIndex, v);
                                 filter.InvokeOnAdd(v, e.NewStartingIndex);
                             }
                             else
@@ -124,7 +71,7 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
                                     filter.InvokeOnAdd(v, e.NewStartingIndex + i);
                                 }
 
-                                list.InsertRange(e.NewStartingIndex, newArray);
+                                View.InsertRange(e.NewStartingIndex, newArray);
                             }
                         }
 
@@ -132,8 +79,8 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
                     case NotifyCollectionChangedAction.Remove:
                         if (e.IsSingleItem)
                         {
-                            var v = list[e.OldStartingIndex];
-                            list.RemoveAt(e.OldStartingIndex);
+                            var v = View[e.OldStartingIndex];
+                            View.RemoveAt(e.OldStartingIndex);
                             filter.InvokeOnRemove(v, e.OldStartingIndex);
                         }
                         else
@@ -141,11 +88,11 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
                             var len = e.OldStartingIndex + e.OldItems.Length;
                             for (var i = e.OldStartingIndex; i < len; i++)
                             {
-                                var v = list[i];
+                                var v = View[i];
                                 filter.InvokeOnRemove(v, e.OldStartingIndex + i);
                             }
 
-                            list.RemoveRange(e.OldStartingIndex, e.OldItems.Length);
+                            View.RemoveRange(e.OldStartingIndex, e.OldItems.Length);
                         }
 
                         break;
@@ -153,22 +100,22 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
                         // ObservableList does not support replace range
                     {
                         var v = (e.NewItem, selector(e.NewItem));
-                        var ov = (e.OldItem, list[e.OldStartingIndex].Item2);
-                        list[e.NewStartingIndex] = v;
+                        var ov = (e.OldItem, View[e.OldStartingIndex].Item2);
+                        View[e.NewStartingIndex] = v;
                         filter.InvokeOnReplace(v, ov, e.NewStartingIndex);
                         break;
                     }
                     case NotifyCollectionChangedAction.Move:
                     {
-                        var removeItem = list[e.OldStartingIndex];
-                        list.RemoveAt(e.OldStartingIndex);
-                        list.Insert(e.NewStartingIndex, removeItem);
+                        var removeItem = View[e.OldStartingIndex];
+                        View.RemoveAt(e.OldStartingIndex);
+                        View.Insert(e.NewStartingIndex, removeItem);
 
                         filter.InvokeOnMove(removeItem, e.NewStartingIndex, e.OldStartingIndex);
                     }
                         break;
                     case NotifyCollectionChangedAction.Reset:
-                        list.Clear();
+                        View.Clear();
                         filter.InvokeOnReset();
                         break;
                 }

@@ -13,63 +13,27 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
         return new View<TView>(this, transform);
     }
 
-    private class View<TView> : SynchronizedViewBase<T, TView>
+    private class View<TView> : SynchronizedCollectionView<T, TView, Stack<(T, TView)>>
     {
         private readonly Func<T, TView> selector;
-        private readonly Stack<(T, TView)> stack;
 
-        public View(ObservableStack<T> source, Func<T, TView> selector) : base(source)
+        public View(ObservableStack<T> source, Func<T, TView> selector) 
+            : base(source, new Stack<(T, TView)>(source.Source.Select(x => (x, selector(x)))))
         {
             this.selector = selector;
-            lock (source.SyncRoot)
-            {
-                stack = new Stack<(T, TView)>(source.Source.Select(x => (x, selector(x))));
-            }
         }
 
-        public override int Count
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return stack.Count;
-                }
-            }
-        }
-
-        public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter,
+        public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter, 
             bool invokeAddEventForCurrentElements = false)
         {
             lock (SyncRoot)
             {
                 this.filter = filter;
-                foreach (var (value, view) in stack)
+                foreach (var (value, view) in View)
                     if (invokeAddEventForCurrentElements)
                         filter.InvokeOnAdd(value, view, 0);
                     else
                         filter.InvokeOnAttach(value, view);
-            }
-        }
-
-        public override void ResetFilter(Action<T, TView>? resetAction)
-        {
-            lock (SyncRoot)
-            {
-                filter = SynchronizedViewFilter<T, TView>.Null;
-                if (resetAction != null)
-                    foreach (var (item, view) in stack)
-                        resetAction(item, view);
-            }
-        }
-
-        public override IEnumerator<(T, TView)> GetEnumerator()
-        {
-            lock (SyncRoot)
-            {
-                foreach (var item in stack)
-                    if (filter.IsMatch(item.Item1, item.Item2))
-                        yield return item;
             }
         }
 
@@ -84,7 +48,7 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
                         if (e.IsSingleItem)
                         {
                             var v = (e.NewItem, selector(e.NewItem));
-                            stack.Push(v);
+                            View.Push(v);
                             filter.InvokeOnAdd(v, 0);
                         }
                         else
@@ -92,7 +56,7 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
                             foreach (var item in e.NewItems)
                             {
                                 var v = (item, selector(item));
-                                stack.Push(v);
+                                View.Push(v);
                                 filter.InvokeOnAdd(v, 0);
                             }
                         }
@@ -102,7 +66,7 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
                         // Pop, PopRange
                         if (e.IsSingleItem)
                         {
-                            var v = stack.Pop();
+                            var v = View.Pop();
                             filter.InvokeOnRemove(v.Item1, v.Item2, 0);
                         }
                         else
@@ -110,14 +74,14 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
                             var len = e.OldItems.Length;
                             for (var i = 0; i < len; i++)
                             {
-                                var v = stack.Pop();
+                                var v = View.Pop();
                                 filter.InvokeOnRemove(v.Item1, v.Item2, 0);
                             }
                         }
 
                         break;
                     case NotifyCollectionChangedAction.Reset:
-                        stack.Clear();
+                        View.Clear();
                         filter.InvokeOnReset();
                         break;
                     case NotifyCollectionChangedAction.Replace:
