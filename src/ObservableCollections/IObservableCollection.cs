@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using ObservableCollections.Comp;
 
 namespace ObservableCollections
 {
@@ -78,27 +79,6 @@ namespace ObservableCollections
         public static void Sort<T, TView, TCompare>(this ISortableSynchronizedView<T, TView> source, Func<T, TCompare> compareSelector, bool ascending = true)
         {
             source.Sort(new AnonymousComparer<T, TCompare>(compareSelector, ascending));
-        }
-
-        class AnonymousComparer<T, TCompare> : IComparer<T>
-        {
-            readonly Func<T, TCompare> selector;
-            readonly int f;
-
-            public AnonymousComparer(Func<T, TCompare> selector, bool ascending)
-            {
-                this.selector = selector;
-                this.f = ascending ? 1 : -1;
-            }
-
-            public int Compare(T? x, T? y)
-            {
-                if (x == null && y == null) return 0;
-                if (x == null) return 1 * f;
-                if (y == null) return -1 * f;
-
-                return Comparer<TCompare>.Default.Compare(selector(x), selector(y)) * f;
-            }
         }
     }
 }
