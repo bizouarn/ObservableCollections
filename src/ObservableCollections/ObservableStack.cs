@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableStack<T> : SynchronizedCollection<T, Stack<T>>, IObservableCollection<T>
+public sealed partial class ObservableStack<T> : SynchronizedCollection<Stack<T>, T>, IObservableCollection<T>
 {
     public ObservableStack()
     {

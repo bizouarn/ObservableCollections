@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableDictionary<TKey, TValue> : SynchronizedCollection<KeyValuePair<TKey, TValue>, Dictionary<TKey, TValue>>,
+public sealed partial class ObservableDictionary<TKey, TValue> : SynchronizedCollection<Dictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>,
     IDictionary<TKey, TValue>,
     IReadOnlyObservableDictionary<TKey, TValue>
     where TKey : notnull
@@ -16,7 +16,7 @@ public sealed partial class ObservableDictionary<TKey, TValue> : SynchronizedCol
     public ObservableDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection)
     {
 #if NET6_0_OR_GREATER
-            Source = new Dictionary<TKey, TValue>(collection);
+        Source = new Dictionary<TKey, TValue>(collection);
 #else
         Source = new Dictionary<TKey, TValue>();
         foreach (var item in collection) Source.Add(item.Key, item.Value);

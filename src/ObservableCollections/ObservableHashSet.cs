@@ -7,7 +7,7 @@ using System.Linq;
 namespace ObservableCollections;
 
 // can not implements ISet<T> because set operation can not get added/removed values.
-public sealed partial class ObservableHashSet<T> : SynchronizedCollection<T, HashSet<T>>, IReadOnlySet<T>, IObservableCollection<T>
+public sealed partial class ObservableHashSet<T> : SynchronizedCollection<HashSet<T>, T>, IReadOnlySet<T>, IObservableCollection<T>
     where T : notnull
 {
     public ObservableHashSet()

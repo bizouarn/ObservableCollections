@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace ObservableCollections;
 
-public abstract class SynchronizedCollection<T, TCol> : Synchronized, IReadOnlyCollection<T>, IEnumerable<T> where TCol : IEnumerable<T>, IReadOnlyCollection<T>
+public abstract class SynchronizedCollection<TCol, TSub> : Synchronized, IReadOnlyCollection<TSub>, IEnumerable<TSub> where TCol : IEnumerable<TSub>, IReadOnlyCollection<TSub>
 {
     protected TCol Source { get; set; }
 
     /// <summary>Returns an enumerator that iterates through the collection.</summary>
     /// <returns>An enumerator that can be used to iterate through the collection.</returns>
-    public IEnumerator<T> GetEnumerator() => Source.GetEnumerator();
+    public IEnumerator<TSub> GetEnumerator() => Source.GetEnumerator();
 
     /// <summary>Returns an enumerator that iterates through a collection.</summary>
     /// <returns>

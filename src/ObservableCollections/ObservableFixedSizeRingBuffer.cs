@@ -4,12 +4,9 @@ using System.Collections.Generic;
 
 namespace ObservableCollections;
 
-public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T, RingBuffer<T>>, IList<T>, IReadOnlyList<T>,
-    IObservableCollection<T>
+public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuffer<T>, T>, IObservableCollection<T>
 {
     private readonly int capacity;
-
-    public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
 
     public ObservableFixedSizeRingBuffer(int capacity)
     {
@@ -28,28 +25,6 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
         }
     }
 
-    public bool IsReadOnly => false;
-
-    public T this[int index]
-    {
-        get
-        {
-            lock (SyncRoot)
-            {
-                return Source[index];
-            }
-        }
-        set
-        {
-            lock (SyncRoot)
-            {
-                var oldValue = Source[index];
-                Source[index] = value;
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Replace(value, oldValue, index, index));
-            }
-        }
-    }
-
     public int Capacity => capacity;
 
     public void AddFirst(T item)
@@ -59,11 +34,11 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
             if (capacity == Source.Count)
             {
                 var remItem = Source.RemoveLast();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(remItem, capacity - 1));
+                InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(remItem, capacity - 1));
             }
 
             Source.AddFirst(item);
-            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, 0));
+            InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Add(item, 0));
         }
     }
 
@@ -74,11 +49,11 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
             if (capacity == Source.Count)
             {
                 var remItem = Source.RemoveFirst();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(remItem, 0));
+                InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(remItem, 0));
             }
 
             Source.AddLast(item);
-            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, Source.Count - 1));
+            InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Add(item, Source.Count - 1));
         }
     }
 
@@ -87,7 +62,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
         lock (SyncRoot)
         {
             var item = Source.RemoveFirst();
-            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, 0));
+            InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(item, 0));
             return item;
         }
     }
@@ -98,7 +73,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
         {
             var index = Source.Count - 1;
             var item = Source.RemoveLast();
-            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, index));
+            InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(item, index));
             return item;
         }
     }
@@ -119,7 +94,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
                     {
                         for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
 
-                        CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
+                        InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
                     }
                 }
 
@@ -128,7 +103,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
                 if (span.Length > capacity) span = span.Slice(span.Length - capacity);
 
                 foreach (var item in span) Source.AddLast(item);
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(span, index));
+                InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Add(span, index));
             }
         }
     }
@@ -145,7 +120,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
                 {
                     for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
 
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
+                    InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
                 }
             }
 
@@ -154,7 +129,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
             if (span.Length > capacity) span = span.Slice(span.Length - capacity);
 
             foreach (var item in span) Source.AddLast(item);
-            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(span, index));
+            InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Add(span, index));
         }
     }
 
@@ -170,7 +145,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
                 {
                     for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
 
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
+                    InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
                 }
             }
 
@@ -179,45 +154,28 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
             if (span.Length > capacity) span = span.Slice(span.Length - capacity);
 
             foreach (var item in span) Source.AddLast(item);
-            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(span, index));
+            InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Add(span, index));
         }
     }
 
-    public int IndexOf(T item)
-    {
-        lock (SyncRoot)
-        {
-            return Source.IndexOf(item);
-        }
-    }
-
-    void IList<T>.Insert(int index, T item)
+    public override void Insert(int index, T item)
     {
         throw new NotSupportedException();
     }
 
-    bool ICollection<T>.Remove(T item)
+    public override bool Remove(T item)
     {
         throw new NotSupportedException();
     }
 
-    void IList<T>.RemoveAt(int index)
+    public override void RemoveAt(int index)
     {
         throw new NotSupportedException();
     }
 
-    void ICollection<T>.Add(T item)
+    public override void Add(T item)
     {
         AddLast(item);
-    }
-
-    public void Clear()
-    {
-        lock (SyncRoot)
-        {
-            Source.Clear();
-            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
-        }
     }
 
     public bool Contains(T item)
