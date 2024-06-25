@@ -6,43 +6,18 @@ using System.Linq;
 
 namespace ObservableCollections;
 
-public sealed class FreezedList<T> : IReadOnlyList<T>, IFreezedCollection<T>
+public sealed class FreezedList<T> : FreezedCollection<IReadOnlyList<T>,T>, IReadOnlyList<T>
 {
-    private readonly IReadOnlyList<T> list;
-
-    public T this[int index] => list[index];
-
-    public int Count => list.Count;
+    public T this[int index] => Collection[index];
 
     public bool IsReadOnly => true;
 
-    public FreezedList(IReadOnlyList<T> list)
+    public FreezedList(IReadOnlyList<T> list) : base(list)
     {
-        this.list = list;
-    }
-
-    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
-    {
-        return new FreezedView<T, TView>(list, transform);
-    }
-
-    public ISortableSynchronizedView<T, TView> CreateSortableView<TView>(Func<T, TView> transform)
-    {
-        return new FreezedSortableView<T, TView>(list, transform);
     }
 
     public bool Contains(T item)
     {
-        return list.Contains(item);
-    }
-
-    public IEnumerator<T> GetEnumerator()
-    {
-        return list.GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
+        return Collection.Contains(item);
     }
 }

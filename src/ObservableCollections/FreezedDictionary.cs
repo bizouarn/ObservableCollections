@@ -1,61 +1,33 @@
 ﻿#nullable disable
 
 using ObservableCollections.Internal;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace ObservableCollections;
 
-public sealed class FreezedDictionary<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>,
-    IFreezedCollection<KeyValuePair<TKey, TValue>>
+public sealed class FreezedDictionary<TKey, TValue> : FreezedCollection<IReadOnlyDictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>, IReadOnlyDictionary<TKey, TValue>
     where TKey : notnull
 {
-    private readonly IReadOnlyDictionary<TKey, TValue> dictionary;
 
-    public FreezedDictionary(IReadOnlyDictionary<TKey, TValue> dictionary)
+    public FreezedDictionary(IReadOnlyDictionary<TKey, TValue> dictionary) : base(dictionary)
     {
-        this.dictionary = dictionary;
     }
 
-    public TValue this[TKey key] => dictionary[key];
+    public TValue this[TKey key] => Collection[key];
 
-    public IEnumerable<TKey> Keys => dictionary.Keys;
+    public IEnumerable<TKey> Keys => Collection.Keys;
 
-    public IEnumerable<TValue> Values => dictionary.Values;
-
-    public int Count => dictionary.Count;
+    public IEnumerable<TValue> Values => Collection.Values;
 
     public bool ContainsKey(TKey key)
     {
-        return dictionary.ContainsKey(key);
-    }
-
-    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-    {
-        return dictionary.GetEnumerator();
+        return Collection.ContainsKey(key);
     }
 
     public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
-        return dictionary.TryGetValue(key, out value);
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return ((IEnumerable) dictionary).GetEnumerator();
-    }
-
-    public ISynchronizedView<KeyValuePair<TKey, TValue>, TView> CreateView<TView>(
-        Func<KeyValuePair<TKey, TValue>, TView> transform)
-    {
-        return new FreezedView<KeyValuePair<TKey, TValue>, TView>(dictionary, transform);
-    }
-
-    public ISortableSynchronizedView<KeyValuePair<TKey, TValue>, TView> CreateSortableView<TView>(
-        Func<KeyValuePair<TKey, TValue>, TView> transform)
-    {
-        return new FreezedSortableView<KeyValuePair<TKey, TValue>, TView>(dictionary, transform);
+        return Collection.TryGetValue(key, out value);
     }
 }
