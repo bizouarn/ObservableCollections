@@ -13,13 +13,15 @@ public sealed partial class ObservableRingBuffer<T>
     }
 
     // used with ObservableFixedSizeRingBuffer
-    internal sealed class View<TView> : SynchronizedView<T, TView>
+    internal sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
+        protected readonly Func<T, TView> selector;
         private readonly bool reverse;
         private readonly RingBuffer<(T, TView)> ringBuffer;
 
-        public View(IObservableCollection<T> source, Func<T, TView> selector, bool reverse) : base(source, selector)
+        public View(IObservableCollection<T> source, Func<T, TView> selector, bool reverse) : base(source)
         {
+            this.selector = selector;
             this.reverse = reverse;
             lock (source.SyncRoot)
             {

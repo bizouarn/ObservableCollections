@@ -14,13 +14,15 @@ public sealed partial class ObservableDictionary<TKey, TValue>
         return new View<TView>(this, transform);
     }
 
-    private class View<TView> : SynchronizedView<KeyValuePair<TKey, TValue>, TView>
+    private class View<TView> : SynchronizedViewBase<KeyValuePair<TKey, TValue>, TView>
     {
+        private readonly Func<KeyValuePair<TKey, TValue>, TView> selector;
         private readonly Dictionary<TKey, (TValue, TView)> dict;
 
         public View(ObservableDictionary<TKey, TValue> source, Func<KeyValuePair<TKey, TValue>, TView> selector)
-            : base(source, selector)
+            : base(source)
         {
+            this.selector = selector;
             lock (source.SyncRoot)
             {
                 dict = source.dictionary.ToDictionary(x => x.Key, x => (x.Value, selector(x)));

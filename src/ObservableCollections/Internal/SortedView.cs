@@ -5,30 +5,17 @@ using System.Collections.Specialized;
 
 namespace ObservableCollections.Internal
 {
-    internal class SortedView<T, TKey, TView> : Synchronized, ISynchronizedView<T, TView>
+    internal class SortedView<T, TKey, TView> : SynchronizedViewBase<T, TView>
         where TKey : notnull
     {
-        public ISynchronizedViewFilter<T, TView> CurrentFilter
-        {
-            get { lock (SyncRoot) return filter; }
-        }
-
-        readonly IObservableCollection<T> source;
         readonly Func<T, TView> transform;
         readonly Func<T, TKey> identitySelector;
         readonly SortedList<(T Value, TKey Key), (T Value, TView View)> list;
-
-        ISynchronizedViewFilter<T, TView> filter;
-
-        public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
-        public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
-
-        public SortedView(IObservableCollection<T> source, Func<T, TKey> identitySelector, Func<T, TView> transform, IComparer<T> comparer)
+         public SortedView(IObservableCollection<T> source, Func<T, TKey> identitySelector, Func<T, TView> transform, IComparer<T> comparer)
+            : base(source)
         {
-            this.source = source;
             this.identitySelector = identitySelector;
             this.transform = transform;
-            this.filter = SynchronizedViewFilter<T, TView>.Null;
             lock (source.SyncRoot)
             {
                 var dict = new Dictionary<(T, TKey), (T, TView)>(source.Count);
@@ -38,11 +25,10 @@ namespace ObservableCollections.Internal
                 }
 
                 this.list = new SortedList<(T Value, TKey Key), (T Value, TView View)>(dict, new Comparer(comparer));
-                this.source.CollectionChanged += SourceCollectionChanged;
             }
         }
 
-        public int Count
+        public override int Count
         {
             get
             {
@@ -53,7 +39,7 @@ namespace ObservableCollections.Internal
             }
         }
 
-        public void AttachFilter(ISynchronizedViewFilter<T, TView> filter, bool invokeAddEventForCurrentElements = false)
+        public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter, bool invokeAddEventForCurrentElements = false)
         {
             lock (SyncRoot)
             {
@@ -73,7 +59,7 @@ namespace ObservableCollections.Internal
             }
         }
 
-        public void ResetFilter(Action<T, TView>? resetAction)
+        public override void ResetFilter(Action<T, TView>? resetAction)
         {
             lock (SyncRoot)
             {
@@ -87,16 +73,8 @@ namespace ObservableCollections.Internal
                 }
             }
         }
-
-        public INotifyCollectionChangedSynchronizedView<TView> ToNotifyCollectionChanged()
-        {
-            lock (SyncRoot)
-            {
-                return new NotifyCollectionChangedSynchronizedView<T, TView>(this);
-            }
-        }
-
-        public IEnumerator<(T, TView)> GetEnumerator()
+        
+        public override IEnumerator<(T, TView)> GetEnumerator()
         {
             lock (SyncRoot)
             {
@@ -110,14 +88,7 @@ namespace ObservableCollections.Internal
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public void Dispose()
-        {
-            this.source.CollectionChanged -= SourceCollectionChanged;
-        }
-
-        private void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
+        protected override void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
         {
             lock (SyncRoot)
             {
@@ -220,8 +191,7 @@ namespace ObservableCollections.Internal
                         break;
                 }
 
-                RoutingCollectionChanged?.Invoke(e);
-                CollectionStateChanged?.Invoke(e.Action);
+               base.SourceCollectionChanged(e);
             }
         }
 

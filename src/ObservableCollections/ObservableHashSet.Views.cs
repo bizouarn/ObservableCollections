@@ -12,12 +12,14 @@ public sealed partial class ObservableHashSet<T> : IReadOnlyCollection<T>, IObse
         return new View<TView>(this, transform);
     }
 
-    private sealed class View<TView> : SynchronizedView<T, TView>
+    private sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
+        protected readonly Func<T, TView> selector;
         private readonly Dictionary<T, (T, TView)> dict;
 
-        public View(ObservableHashSet<T> source, Func<T, TView> selector) : base(source, selector)
+        public View(ObservableHashSet<T> source, Func<T, TView> selector) : base(source)
         {
+            this.selector = selector;
             lock (source.SyncRoot)
             {
                 dict = source.set.ToDictionary(x => x, x => (x, selector(x)));

@@ -6,16 +6,14 @@ using ObservableCollections.Internal;
 
 namespace ObservableCollections;
 
-public abstract class SynchronizedView<T, TView> : Synchronized, ISynchronizedView<T, TView>
+public abstract class SynchronizedViewBase<T, TView> : Synchronized, ISynchronizedView<T, TView>
 {
-    protected readonly Func<T, TView> selector;
     protected readonly IObservableCollection<T> source;
     protected ISynchronizedViewFilter<T, TView> filter;
 
-    public SynchronizedView(IObservableCollection<T> source, Func<T, TView> selector)
+    public SynchronizedViewBase(IObservableCollection<T> source)
     {
         this.source = source;
-        this.selector = selector;
         filter = SynchronizedViewFilter<T, TView>.Null;
         lock (source.SyncRoot)
         {

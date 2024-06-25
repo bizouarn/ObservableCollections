@@ -12,13 +12,15 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
         return new View<TView>(this, transform, reverse);
     }
 
-    private sealed class View<TView> : SynchronizedView<T, TView>
+    private sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
+        protected readonly Func<T, TView> selector;
         private readonly List<(T, TView)> list;
         private readonly bool reverse;
 
-        public View(ObservableList<T> source, Func<T, TView> selector, bool reverse) : base(source, selector)
+        public View(ObservableList<T> source, Func<T, TView> selector, bool reverse) : base(source)
         {
+            this.selector = selector;
             this.reverse = reverse;
             lock (source.SyncRoot)
             {

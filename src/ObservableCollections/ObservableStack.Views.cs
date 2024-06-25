@@ -12,13 +12,15 @@ public sealed partial class ObservableStack<T> : IReadOnlyCollection<T>, IObserv
         return new View<TView>(this, transform, reverse);
     }
 
-    private class View<TView> : SynchronizedView<T, TView>
+    private class View<TView> : SynchronizedViewBase<T, TView>
     {
+        protected readonly Func<T, TView> selector;
         private readonly bool reverse;
         protected readonly Stack<(T, TView)> stack;
 
-        public View(ObservableStack<T> source, Func<T, TView> selector, bool reverse) : base(source, selector)
+        public View(ObservableStack<T> source, Func<T, TView> selector, bool reverse) : base(source)
         {
+            this.selector = selector;
             this.reverse = reverse;
             lock (source.SyncRoot)
             {
