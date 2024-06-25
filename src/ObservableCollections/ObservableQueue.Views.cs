@@ -6,7 +6,7 @@ using ObservableCollections.Sync;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableQueue<T> : IReadOnlyCollection<T>, IObservableCollection<T>
+public sealed partial class ObservableQueue<T> : IObservableCollection<T>
 {
     public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
     {
@@ -15,8 +15,8 @@ public sealed partial class ObservableQueue<T> : IReadOnlyCollection<T>, IObserv
 
     private class View<TView> : SynchronizedViewBase<T, TView>
     {
-        protected readonly Func<T, TView> selector;
-        protected readonly Queue<(T, TView)> queue;
+        private readonly Func<T, TView> selector;
+        private readonly Queue<(T, TView)> queue;
         private readonly bool reverse;
 
         public View(ObservableQueue<T> source, Func<T, TView> selector, bool reverse) : base(source)
@@ -25,7 +25,7 @@ public sealed partial class ObservableQueue<T> : IReadOnlyCollection<T>, IObserv
             this.reverse = reverse;
             lock (source.SyncRoot)
             {
-                queue = new Queue<(T, TView)>(source.queue.Select(x => (x, selector(x))));
+                queue = new Queue<(T, TView)>(source.Source.Select(x => (x, selector(x))));
             }
         }
 

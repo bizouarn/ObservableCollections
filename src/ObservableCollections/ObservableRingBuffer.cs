@@ -2,205 +2,193 @@
 using System;
 using System.Collections.Generic;
 
-namespace ObservableCollections
+namespace ObservableCollections;
+
+public sealed partial class ObservableRingBuffer<T> : SynchronizedCollection<T, RingBuffer<T>>, IList<T>, IReadOnlyList<T>,
+    IObservableCollection<T>
 {
-    public sealed partial class ObservableRingBuffer<T> : SynchronizedCollection<T>, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
+    public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
+
+    public ObservableRingBuffer()
     {
-        readonly RingBuffer<T> buffer;
-        protected override IReadOnlyCollection<T> Source { get => buffer; }
+        Source = new RingBuffer<T>();
+    }
 
-        public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
+    public ObservableRingBuffer(IEnumerable<T> collection)
+    {
+        Source = new RingBuffer<T>(collection);
+    }
 
-        public ObservableRingBuffer()
-        {
-            this.buffer = new RingBuffer<T>();
-        }
+    public bool IsReadOnly => false;
 
-        public ObservableRingBuffer(IEnumerable<T> collection)
-        {
-            this.buffer = new RingBuffer<T>(collection);
-        }
-
-        public bool IsReadOnly => false;
-
-        public T this[int index]
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return this.buffer[index];
-                }
-            }
-            set
-            {
-                lock (SyncRoot)
-                {
-                    var oldValue = buffer[index];
-                    buffer[index] = value;
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Replace(value, oldValue, index, index));
-                }
-            }
-        }
-
-        public void AddFirst(T item)
+    public T this[int index]
+    {
+        get
         {
             lock (SyncRoot)
             {
-                buffer.AddFirst(item);
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, 0));
+                return Source[index];
             }
         }
-
-        public void AddLast(T item)
+        set
         {
             lock (SyncRoot)
             {
-                buffer.AddLast(item);
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, buffer.Count - 1));
+                var oldValue = Source[index];
+                Source[index] = value;
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Replace(value, oldValue, index, index));
             }
         }
+    }
 
-        public T RemoveFirst()
+    public void AddFirst(T item)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            Source.AddFirst(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, 0));
+        }
+    }
+
+    public void AddLast(T item)
+    {
+        lock (SyncRoot)
+        {
+            Source.AddLast(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, Source.Count - 1));
+        }
+    }
+
+    public T RemoveFirst()
+    {
+        lock (SyncRoot)
+        {
+            var item = Source.RemoveFirst();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, 0));
+            return item;
+        }
+    }
+
+    public T RemoveLast()
+    {
+        lock (SyncRoot)
+        {
+            var index = Source.Count - 1;
+            var item = Source.RemoveLast();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, index));
+            return item;
+        }
+    }
+
+    // AddFirstRange is not exists.
+
+    public void AddLastRange(IEnumerable<T> items)
+    {
+        lock (SyncRoot)
+        {
+            var index = Source.Count;
+            using (var xs = new CloneCollection<T>(items))
             {
-                var item = buffer.RemoveFirst();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, 0));
-                return item;
+                foreach (var item in xs.Span) Source.AddLast(item);
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(xs.Span, index));
             }
         }
+    }
 
-        public T RemoveLast()
+    public void AddLastRange(T[] items)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                var index = buffer.Count - 1;
-                var item = buffer.RemoveLast();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, index));
-                return item;
-            }
+            var index = Source.Count;
+            foreach (var item in items) Source.AddLast(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(items, index));
         }
+    }
 
-        // AddFirstRange is not exists.
-
-        public void AddLastRange(IEnumerable<T> items)
+    public void AddLastRange(ReadOnlySpan<T> items)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                var index = buffer.Count;
-                using (var xs = new CloneCollection<T>(items))
-                {
-                    foreach (var item in xs.Span)
-                    {
-                        buffer.AddLast(item);
-                    }
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(xs.Span, index));
-                }
-            }
+            var index = Source.Count;
+            foreach (var item in items) Source.AddLast(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(items, index));
         }
+    }
 
-        public void AddLastRange(T[] items)
+    public int IndexOf(T item)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                var index = buffer.Count;
-                foreach (var item in items)
-                {
-                    buffer.AddLast(item);
-                }
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(items, index));
-            }
+            return Source.IndexOf(item);
         }
+    }
 
-        public void AddLastRange(ReadOnlySpan<T> items)
+    void IList<T>.Insert(int index, T item)
+    {
+        throw new NotSupportedException();
+    }
+
+    bool ICollection<T>.Remove(T item)
+    {
+        throw new NotSupportedException();
+    }
+
+    void IList<T>.RemoveAt(int index)
+    {
+        throw new NotSupportedException();
+    }
+
+    void ICollection<T>.Add(T item)
+    {
+        AddLast(item);
+    }
+
+    public void Clear()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                var index = buffer.Count;
-                foreach (var item in items)
-                {
-                    buffer.AddLast(item);
-                }
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(items, index));
-            }
+            Source.Clear();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
         }
+    }
 
-        public int IndexOf(T item)
+    public bool Contains(T item)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return buffer.IndexOf(item);
-            }
+            return Source.Contains(item);
         }
+    }
 
-        void IList<T>.Insert(int index, T item)
+    public void CopyTo(T[] array, int arrayIndex)
+    {
+        lock (SyncRoot)
         {
-            throw new NotSupportedException();
+            Source.CopyTo(array, arrayIndex);
         }
+    }
 
-        bool ICollection<T>.Remove(T item)
+    public T[] ToArray()
+    {
+        lock (SyncRoot)
         {
-            throw new NotSupportedException();
+            return Source.ToArray();
         }
+    }
 
-        void IList<T>.RemoveAt(int index)
+    public int BinarySearch(T item)
+    {
+        lock (SyncRoot)
         {
-            throw new NotSupportedException();
+            return Source.BinarySearch(item);
         }
+    }
 
-        void ICollection<T>.Add(T item)
+    public int BinarySearch(T item, IComparer<T> comparer)
+    {
+        lock (SyncRoot)
         {
-            AddLast(item);
-        }
-
-        public void Clear()
-        {
-            lock (SyncRoot)
-            {
-                buffer.Clear();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
-            }
-        }
-
-        public bool Contains(T item)
-        {
-            lock (SyncRoot)
-            {
-                return buffer.Contains(item);
-            }
-        }
-
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            lock (SyncRoot)
-            {
-                buffer.CopyTo(array, arrayIndex);
-            }
-        }
-
-        public T[] ToArray()
-        {
-            lock (SyncRoot)
-            {
-                return buffer.ToArray();
-            }
-        }
-
-        public int BinarySearch(T item)
-        {
-            lock (SyncRoot)
-            {
-                return buffer.BinarySearch(item);
-            }
-        }
-
-        public int BinarySearch(T item, IComparer<T> comparer)
-        {
-            lock (SyncRoot)
-            {
-                return buffer.BinarySearch(item, comparer);
-            }
+            return Source.BinarySearch(item, comparer);
         }
     }
 }

@@ -2,298 +2,266 @@
 using System;
 using System.Collections.Generic;
 
-namespace ObservableCollections
+namespace ObservableCollections;
+
+public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T, RingBuffer<T>>, IList<T>, IReadOnlyList<T>,
+    IObservableCollection<T>
 {
-    public sealed partial class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T>, IList<T>, IReadOnlyList<T>, IObservableCollection<T>
+    private readonly int capacity;
+
+    public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
+
+    public ObservableFixedSizeRingBuffer(int capacity)
     {
-        readonly RingBuffer<T> buffer;
-        protected override IReadOnlyCollection<T> Source { get => buffer; }
-        readonly int capacity;
+        this.capacity = capacity;
+        Source = new RingBuffer<T>(capacity);
+    }
 
-        public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
-
-        public ObservableFixedSizeRingBuffer(int capacity)
+    public ObservableFixedSizeRingBuffer(int capacity, IEnumerable<T> collection)
+    {
+        this.capacity = capacity;
+        Source = new RingBuffer<T>(capacity);
+        foreach (var item in collection)
         {
-            this.capacity = capacity;
-            this.buffer = new RingBuffer<T>(capacity);
+            if (capacity == Source.Count) Source.RemoveFirst();
+            Source.AddLast(item);
         }
+    }
 
-        public ObservableFixedSizeRingBuffer(int capacity, IEnumerable<T> collection)
-        {
-            this.capacity = capacity;
-            this.buffer = new RingBuffer<T>(capacity);
-            foreach (var item in collection)
-            {
-                if (capacity == buffer.Count)
-                {
-                    buffer.RemoveFirst();
-                }
-                buffer.AddLast(item);
-            }
-        }
+    public bool IsReadOnly => false;
 
-        public bool IsReadOnly => false;
-
-        public T this[int index]
-        {
-            get
-            {
-                lock (SyncRoot)
-                {
-                    return this.buffer[index];
-                }
-            }
-            set
-            {
-                lock (SyncRoot)
-                {
-                    var oldValue = buffer[index];
-                    buffer[index] = value;
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Replace(value, oldValue, index, index));
-                }
-            }
-        }
-
-        public int Capacity => capacity;
-
-        public void AddFirst(T item)
+    public T this[int index]
+    {
+        get
         {
             lock (SyncRoot)
             {
-                if (capacity == buffer.Count)
-                {
-                    var remItem = buffer.RemoveLast();
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(remItem, capacity - 1));
-                }
-
-                buffer.AddFirst(item);
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, 0));
+                return Source[index];
             }
         }
-
-        public void AddLast(T item)
+        set
         {
             lock (SyncRoot)
             {
-                if (capacity == buffer.Count)
-                {
-                    var remItem = buffer.RemoveFirst();
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(remItem, 0));
-                }
-
-                buffer.AddLast(item);
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, buffer.Count - 1));
+                var oldValue = Source[index];
+                Source[index] = value;
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Replace(value, oldValue, index, index));
             }
         }
+    }
 
-        public T RemoveFirst()
+    public int Capacity => capacity;
+
+    public void AddFirst(T item)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            if (capacity == Source.Count)
             {
-                var item = buffer.RemoveFirst();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, 0));
-                return item;
+                var remItem = Source.RemoveLast();
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(remItem, capacity - 1));
             }
-        }
 
-        public T RemoveLast()
+            Source.AddFirst(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, 0));
+        }
+    }
+
+    public void AddLast(T item)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            if (capacity == Source.Count)
             {
-                var index = buffer.Count - 1;
-                var item = buffer.RemoveLast();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, index));
-                return item;
+                var remItem = Source.RemoveFirst();
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(remItem, 0));
             }
+
+            Source.AddLast(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, Source.Count - 1));
         }
+    }
 
-        // AddFirstRange is not exists.
-
-        public void AddLastRange(IEnumerable<T> items)
+    public T RemoveFirst()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                using (var xs = new CloneCollection<T>(items))
-                {
-                    if (capacity <= buffer.Count + xs.Span.Length)
-                    {
-                        // calc remove count
-                        var remCount = Math.Min(buffer.Count, buffer.Count + xs.Span.Length - capacity);
-                        using (var ys = new ResizableArray<T>(remCount))
-                        {
-                            for (var i = 0; i < remCount; i++)
-                            {
-                                ys.Add(buffer.RemoveFirst());
-                            }
-
-                            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
-                        }
-                    }
-
-                    var index = buffer.Count;
-                    var span = xs.Span;
-                    if (span.Length > capacity)
-                    {
-                        span = span.Slice(span.Length - capacity);
-                    }
-
-                    foreach (var item in span)
-                    {
-                        buffer.AddLast(item);
-                    }
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(span, index));
-                }
-            }
+            var item = Source.RemoveFirst();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, 0));
+            return item;
         }
+    }
 
-        public void AddLastRange(T[] items)
+    public T RemoveLast()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            var index = Source.Count - 1;
+            var item = Source.RemoveLast();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, index));
+            return item;
+        }
+    }
+
+    // AddFirstRange is not exists.
+
+    public void AddLastRange(IEnumerable<T> items)
+    {
+        lock (SyncRoot)
+        {
+            using (var xs = new CloneCollection<T>(items))
             {
-                if (capacity <= buffer.Count + items.Length)
+                if (capacity <= Source.Count + xs.Span.Length)
                 {
                     // calc remove count
-                    var remCount = Math.Min(buffer.Count, buffer.Count + items.Length - capacity);
+                    var remCount = Math.Min(Source.Count, Source.Count + xs.Span.Length - capacity);
                     using (var ys = new ResizableArray<T>(remCount))
                     {
-                        for (var i = 0; i < remCount; i++)
-                        {
-                            ys.Add(buffer.RemoveFirst());
-                        }
+                        for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
 
                         CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
                     }
                 }
 
-                var index = buffer.Count;
-                var span = items.AsSpan();
-                if (span.Length > capacity)
-                {
-                    span = span.Slice(span.Length - capacity);
-                }
+                var index = Source.Count;
+                var span = xs.Span;
+                if (span.Length > capacity) span = span.Slice(span.Length - capacity);
 
-                foreach (var item in span)
-                {
-                    buffer.AddLast(item);
-                }
+                foreach (var item in span) Source.AddLast(item);
                 CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(span, index));
             }
         }
+    }
 
-        public void AddLastRange(ReadOnlySpan<T> items)
+    public void AddLastRange(T[] items)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            if (capacity <= Source.Count + items.Length)
             {
-                if (capacity <= buffer.Count + items.Length)
+                // calc remove count
+                var remCount = Math.Min(Source.Count, Source.Count + items.Length - capacity);
+                using (var ys = new ResizableArray<T>(remCount))
                 {
-                    // calc remove count
-                    var remCount = Math.Min(buffer.Count, buffer.Count + items.Length - capacity);
-                    using (var ys = new ResizableArray<T>(remCount))
-                    {
-                        for (var i = 0; i < remCount; i++)
-                        {
-                            ys.Add(buffer.RemoveFirst());
-                        }
+                    for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
 
-                        CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
-                    }
+                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
                 }
+            }
 
-                var index = buffer.Count;
-                var span = items;
-                if (span.Length > capacity)
+            var index = Source.Count;
+            var span = items.AsSpan();
+            if (span.Length > capacity) span = span.Slice(span.Length - capacity);
+
+            foreach (var item in span) Source.AddLast(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(span, index));
+        }
+    }
+
+    public void AddLastRange(ReadOnlySpan<T> items)
+    {
+        lock (SyncRoot)
+        {
+            if (capacity <= Source.Count + items.Length)
+            {
+                // calc remove count
+                var remCount = Math.Min(Source.Count, Source.Count + items.Length - capacity);
+                using (var ys = new ResizableArray<T>(remCount))
                 {
-                    span = span.Slice(span.Length - capacity);
+                    for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
+
+                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(ys.Span, 0));
                 }
-
-                foreach (var item in span)
-                {
-                    buffer.AddLast(item);
-                }
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(span, index));
             }
-        }
 
-        public int IndexOf(T item)
-        {
-            lock (SyncRoot)
-            {
-                return buffer.IndexOf(item);
-            }
-        }
+            var index = Source.Count;
+            var span = items;
+            if (span.Length > capacity) span = span.Slice(span.Length - capacity);
 
-        void IList<T>.Insert(int index, T item)
-        {
-            throw new NotSupportedException();
+            foreach (var item in span) Source.AddLast(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(span, index));
         }
+    }
 
-        bool ICollection<T>.Remove(T item)
+    public int IndexOf(T item)
+    {
+        lock (SyncRoot)
         {
-            throw new NotSupportedException();
+            return Source.IndexOf(item);
         }
+    }
 
-        void IList<T>.RemoveAt(int index)
-        {
-            throw new NotSupportedException();
-        }
+    void IList<T>.Insert(int index, T item)
+    {
+        throw new NotSupportedException();
+    }
 
-        void ICollection<T>.Add(T item)
-        {
-            AddLast(item);
-        }
+    bool ICollection<T>.Remove(T item)
+    {
+        throw new NotSupportedException();
+    }
 
-        public void Clear()
-        {
-            lock (SyncRoot)
-            {
-                buffer.Clear();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
-            }
-        }
+    void IList<T>.RemoveAt(int index)
+    {
+        throw new NotSupportedException();
+    }
 
-        public bool Contains(T item)
-        {
-            lock (SyncRoot)
-            {
-                return buffer.Contains(item);
-            }
-        }
+    void ICollection<T>.Add(T item)
+    {
+        AddLast(item);
+    }
 
-        public void CopyTo(T[] array, int arrayIndex)
+    public void Clear()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                buffer.CopyTo(array, arrayIndex);
-            }
+            Source.Clear();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
         }
+    }
 
-        public T[] ToArray()
+    public bool Contains(T item)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return buffer.ToArray();
-            }
+            return Source.Contains(item);
         }
+    }
 
-        public int BinarySearch(T item)
+    public void CopyTo(T[] array, int arrayIndex)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return buffer.BinarySearch(item);
-            }
+            Source.CopyTo(array, arrayIndex);
         }
+    }
 
-        public int BinarySearch(T item, IComparer<T> comparer)
+    public T[] ToArray()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return buffer.BinarySearch(item, comparer);
-            }
+            return Source.ToArray();
         }
+    }
 
-        public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
+    public int BinarySearch(T item)
+    {
+        lock (SyncRoot)
         {
-            return new ObservableRingBuffer<T>.View<TView>(this, transform, reverse);
+            return Source.BinarySearch(item);
         }
+    }
+
+    public int BinarySearch(T item, IComparer<T> comparer)
+    {
+        lock (SyncRoot)
+        {
+            return Source.BinarySearch(item, comparer);
+        }
+    }
+
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
+    {
+        return new ObservableRingBuffer<T>.View<TView>(this, transform, reverse);
     }
 }

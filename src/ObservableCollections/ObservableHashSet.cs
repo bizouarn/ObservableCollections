@@ -4,237 +4,211 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace ObservableCollections
-{
-    // can not implements ISet<T> because set operation can not get added/removed values.
-    public sealed partial class ObservableHashSet<T> : SynchronizedCollection<T>, IReadOnlySet<T>, IObservableCollection<T>
-        where T : notnull
-    {
-        readonly HashSet<T> set;
-        protected override IReadOnlyCollection<T> Source { get => set; }
+namespace ObservableCollections;
 
-        public ObservableHashSet()
-        {
-            this.set = new HashSet<T>();
-        }
+// can not implements ISet<T> because set operation can not get added/removed values.
+public sealed partial class ObservableHashSet<T> : SynchronizedCollection<T, HashSet<T>>, IReadOnlySet<T>, IObservableCollection<T>
+    where T : notnull
+{
+    public ObservableHashSet()
+    {
+        Source = new HashSet<T>();
+    }
 
 #if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
 
-        public ObservableHashSet(int capacity)
-        {
-            this.set = new HashSet<T>(capacity);
-        }
+    public ObservableHashSet(int capacity)
+    {
+        Source = new HashSet<T>(capacity);
+    }
 
 #endif
 
-        public ObservableHashSet(IEnumerable<T> collection)
+    public ObservableHashSet(IEnumerable<T> collection)
+    {
+        Source = new HashSet<T>(collection);
+    }
+
+    public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
+
+    public bool IsReadOnly => false;
+
+    public bool Add(T item)
+    {
+        lock (SyncRoot)
         {
-            this.set = new HashSet<T>(collection);
-        }
-
-        public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
-
-        public bool IsReadOnly => false;
-
-        public bool Add(T item)
-        {
-            lock (SyncRoot)
+            if (Source.Add(item))
             {
-                if (set.Add(item))
-                {
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, -1));
-                    return true;
-                }
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, -1));
+                return true;
+            }
 
-                return false;
+            return false;
+        }
+    }
+
+    public void AddRange(IEnumerable<T> items)
+    {
+        lock (SyncRoot)
+        {
+            if (!items.TryGetNonEnumeratedCount(out var capacity)) capacity = 4;
+
+            using (var list = new ResizableArray<T>(capacity))
+            {
+                foreach (var item in items)
+                    if (Source.Add(item))
+                        list.Add(item);
+
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(list.Span, -1));
             }
         }
+    }
 
-        public void AddRange(IEnumerable<T> items)
+    public void AddRange(T[] items)
+    {
+        AddRange(items.AsSpan());
+    }
+
+    public void AddRange(ReadOnlySpan<T> items)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            using (var list = new ResizableArray<T>(items.Length))
             {
-                if (!items.TryGetNonEnumeratedCount(out var capacity))
-                {
-                    capacity = 4;
-                }
+                foreach (var item in items)
+                    if (Source.Add(item))
+                        list.Add(item);
 
-                using (var list = new ResizableArray<T>(capacity))
-                {
-                    foreach (var item in items)
-                    {
-                        if (set.Add(item))
-                        {
-                            list.Add(item);
-                        }
-                    }
-
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(list.Span, -1));
-                }
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(list.Span, -1));
             }
         }
+    }
 
-        public void AddRange(T[] items)
+    public bool Remove(T item)
+    {
+        lock (SyncRoot)
         {
-            AddRange(items.AsSpan());
-        }
-
-        public void AddRange(ReadOnlySpan<T> items)
-        {
-            lock (SyncRoot)
+            if (Source.Remove(item))
             {
-                using (var list = new ResizableArray<T>(items.Length))
-                {
-                    foreach (var item in items)
-                    {
-                        if (set.Add(item))
-                        {
-                            list.Add(item);
-                        }
-                    }
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, -1));
+                return true;
+            }
 
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(list.Span, -1));
-                }
+            return false;
+        }
+    }
+
+    public void RemoveRange(IEnumerable<T> items)
+    {
+        lock (SyncRoot)
+        {
+            if (!items.TryGetNonEnumeratedCount(out var capacity)) capacity = 4;
+
+            using (var list = new ResizableArray<T>(capacity))
+            {
+                foreach (var item in items)
+                    if (Source.Remove(item))
+                        list.Add(item);
+
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(list.Span, -1));
             }
         }
+    }
 
-        public bool Remove(T item)
+    public void RemoveRange(T[] items)
+    {
+        RemoveRange(items.AsSpan());
+    }
+
+    public void RemoveRange(ReadOnlySpan<T> items)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            using (var list = new ResizableArray<T>(items.Length))
             {
-                if (set.Remove(item))
-                {
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, -1));
-                    return true;
-                }
+                foreach (var item in items)
+                    if (Source.Remove(item))
+                        list.Add(item);
 
-                return false;
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(list.Span, -1));
             }
         }
+    }
 
-        public void RemoveRange(IEnumerable<T> items)
+    public void Clear()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                if (!items.TryGetNonEnumeratedCount(out var capacity))
-                {
-                    capacity = 4;
-                }
-
-                using (var list = new ResizableArray<T>(capacity))
-                {
-                    foreach (var item in items)
-                    {
-                        if (set.Remove(item))
-                        {
-                            list.Add(item);
-                        }
-                    }
-
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(list.Span, -1));
-                }
-            }
+            Source.Clear();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
         }
-
-        public void RemoveRange(T[] items)
-        {
-            RemoveRange(items.AsSpan());
-        }
-
-        public void RemoveRange(ReadOnlySpan<T> items)
-        {
-            lock (SyncRoot)
-            {
-                using (var list = new ResizableArray<T>(items.Length))
-                {
-                    foreach (var item in items)
-                    {
-                        if (set.Remove(item))
-                        {
-                            list.Add(item);
-                        }
-                    }
-
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(list.Span, -1));
-                }
-            }
-        }
-
-        public void Clear()
-        {
-            lock (SyncRoot)
-            {
-                set.Clear();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
-            }
-        }
+    }
 
 #if !NETSTANDARD2_0 && !NET_STANDARD_2_0 && !NET_4_6
 
-        public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
+    public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
+    {
+        lock (SyncRoot)
         {
-            lock(SyncRoot)
-            {
-                return set.TryGetValue(equalValue, out actualValue);
-            }
+            return Source.TryGetValue(equalValue, out actualValue);
         }
+    }
 
 #endif
 
-        public bool Contains(T item)
+    public bool Contains(T item)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return set.Contains(item);
-            }
+            return Source.Contains(item);
         }
+    }
 
-        public bool IsProperSubsetOf(IEnumerable<T> other)
+    public bool IsProperSubsetOf(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return set.IsProperSubsetOf(other);
-            }
+            return Source.IsProperSubsetOf(other);
         }
+    }
 
-        public bool IsProperSupersetOf(IEnumerable<T> other)
+    public bool IsProperSupersetOf(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return set.IsProperSupersetOf(other);
-            }
+            return Source.IsProperSupersetOf(other);
         }
+    }
 
-        public bool IsSubsetOf(IEnumerable<T> other)
+    public bool IsSubsetOf(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return set.IsSubsetOf(other);
-            }
+            return Source.IsSubsetOf(other);
         }
+    }
 
-        public bool IsSupersetOf(IEnumerable<T> other)
+    public bool IsSupersetOf(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return set.IsSupersetOf(other);
-            }
+            return Source.IsSupersetOf(other);
         }
+    }
 
-        public bool Overlaps(IEnumerable<T> other)
+    public bool Overlaps(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return set.Overlaps(other);
-            }
+            return Source.Overlaps(other);
         }
+    }
 
-        public bool SetEquals(IEnumerable<T> other)
+    public bool SetEquals(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                return set.SetEquals(other);
-            }
+            return Source.SetEquals(other);
         }
     }
 }

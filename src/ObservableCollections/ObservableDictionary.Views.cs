@@ -26,7 +26,7 @@ public sealed partial class ObservableDictionary<TKey, TValue>
             this.selector = selector;
             lock (source.SyncRoot)
             {
-                dict = source.dictionary.ToDictionary(x => x.Key, x => (x.Value, selector(x)));
+                dict = source.Source.ToDictionary(x => x.Key, x => (x.Value, selector(x)));
             }
         }
 

@@ -16,7 +16,7 @@ public sealed partial class ObservableRingBuffer<T>
     // used with ObservableFixedSizeRingBuffer
     internal sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
-        protected readonly Func<T, TView> selector;
+        private readonly Func<T, TView> selector;
         private readonly bool reverse;
         private readonly RingBuffer<(T, TView)> ringBuffer;
 

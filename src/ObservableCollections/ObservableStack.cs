@@ -5,183 +5,165 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace ObservableCollections
+namespace ObservableCollections;
+
+public sealed partial class ObservableStack<T> : SynchronizedCollection<T, Stack<T>>, IObservableCollection<T>
 {
-    public sealed partial class ObservableStack<T> : SynchronizedCollection<T>, IObservableCollection<T>
+    public ObservableStack()
     {
-        readonly Stack<T> stack;
-        protected override IReadOnlyCollection<T> Source { get => stack; }
+        Source = new Stack<T>();
+    }
 
-        public ObservableStack()
+    public ObservableStack(int capacity)
+    {
+        Source = new Stack<T>(capacity);
+    }
+
+    public ObservableStack(IEnumerable<T> collection)
+    {
+        Source = new Stack<T>(collection);
+    }
+
+    public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
+
+    public void Push(T item)
+    {
+        lock (SyncRoot)
         {
-            this.stack = new Stack<T>();
+            Source.Push(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, 0));
         }
+    }
 
-        public ObservableStack(int capacity)
+    public void PushRange(IEnumerable<T> items)
+    {
+        lock (SyncRoot)
         {
-            this.stack = new Stack<T>(capacity);
-        }
-
-        public ObservableStack(IEnumerable<T> collection)
-        {
-            this.stack = new Stack<T>(collection);
-        }
-
-        public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
-
-        public void Push(T item)
-        {
-            lock (SyncRoot)
+            using (var xs = new CloneCollection<T>(items))
             {
-                stack.Push(item);
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(item, 0));
+                foreach (var item in xs.Span) Source.Push(item);
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(xs.Span, 0));
             }
         }
+    }
 
-        public void PushRange(IEnumerable<T> items)
+    public void PushRange(T[] items)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            foreach (var item in items) Source.Push(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(items, 0));
+        }
+    }
+
+    public void PushRange(ReadOnlySpan<T> items)
+    {
+        lock (SyncRoot)
+        {
+            foreach (var item in items) Source.Push(item);
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(items, 0));
+        }
+    }
+
+    public T Pop()
+    {
+        lock (SyncRoot)
+        {
+            var v = Source.Pop();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(v, 0));
+            return v;
+        }
+    }
+
+    public bool TryPop([MaybeNullWhen(false)] out T result)
+    {
+        lock (SyncRoot)
+        {
+            if (Source.Count != 0)
             {
-                using (var xs = new CloneCollection<T>(items))
-                {
-                    foreach (var item in xs.Span)
-                    {
-                        stack.Push(item);
-                    }
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(xs.Span, 0));
-                }
+                result = Source.Pop();
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(result, 0));
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+    }
+
+    public void PopRange(int count)
+    {
+        lock (SyncRoot)
+        {
+            var dest = ArrayPool<T>.Shared.Rent(count);
+            try
+            {
+                for (var i = 0; i < count; i++) dest[i] = Source.Pop();
+
+                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(dest.AsSpan(0, count), 0));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(dest, RuntimeHelpersEx.IsReferenceOrContainsReferences<T>());
             }
         }
+    }
 
-        public void PushRange(T[] items)
+    public void PopRange(Span<T> dest)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                foreach (var item in items)
-                {
-                    stack.Push(item);
-                }
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(items, 0));
-            }
+            for (var i = 0; i < dest.Length; i++) dest[i] = Source.Pop();
+
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(dest, 0));
         }
+    }
 
-        public void PushRange(ReadOnlySpan<T> items)
+    public void Clear()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                foreach (var item in items)
-                {
-                    stack.Push(item);
-                }
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Add(items, 0));
-            }
+            Source.Clear();
+            CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
         }
+    }
 
-        public T Pop()
+    public T Peek()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                var v = stack.Pop();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(v, 0));
-                return v;
-            }
+            return Source.Peek();
         }
+    }
 
-        public bool TryPop([MaybeNullWhen(false)] out T result)
+    public bool TryPeek([MaybeNullWhen(false)] T result)
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
+            if (Source.Count != 0)
             {
-                if (stack.Count != 0)
-                {
-                    result = stack.Pop();
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(result, 0));
-                    return true;
-                }
-
-                result = default;
-                return false;
+                result = Source.Peek();
+                return true;
             }
+
+            result = default;
+            return false;
         }
+    }
 
-        public void PopRange(int count)
+    public T[] ToArray()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                var dest = ArrayPool<T>.Shared.Rent(count);
-                try
-                {
-                    for (var i = 0; i < count; i++)
-                    {
-                        dest[i] = stack.Pop();
-                    }
-
-                    CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(dest.AsSpan(0, count), 0));
-                }
-                finally
-                {
-                    ArrayPool<T>.Shared.Return(dest, RuntimeHelpersEx.IsReferenceOrContainsReferences<T>());
-                }
-            }
+            return Source.ToArray();
         }
+    }
 
-        public void PopRange(Span<T> dest)
+    public void TrimExcess()
+    {
+        lock (SyncRoot)
         {
-            lock (SyncRoot)
-            {
-                for (var i = 0; i < dest.Length; i++)
-                {
-                    dest[i] = stack.Pop();
-                }
-
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(dest, 0));
-            }
-        }
-
-        public void Clear()
-        {
-            lock (SyncRoot)
-            {
-                stack.Clear();
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Reset());
-            }
-        }
-
-        public T Peek()
-        {
-            lock (SyncRoot)
-            {
-                return stack.Peek();
-            }
-        }
-
-        public bool TryPeek([MaybeNullWhen(false)] T result)
-        {
-            lock (SyncRoot)
-            {
-                if (stack.Count != 0)
-                {
-                    result = stack.Peek();
-                    return true;
-                }
-                result = default;
-                return false;
-            }
-        }
-
-        public T[] ToArray()
-        {
-            lock (SyncRoot)
-            {
-                return stack.ToArray();
-            }
-        }
-
-        public void TrimExcess()
-        {
-            lock (SyncRoot)
-            {
-                stack.TrimExcess();
-            }
+            Source.TrimExcess();
         }
     }
 }

@@ -1,5 +1,4 @@
 #if NETSTANDARD2_0 || NET_STANDARD_2_0 || NET_4_6
-
 namespace System.Diagnostics.CodeAnalysis
 {
     internal sealed class MaybeNullWhenAttribute : Attribute

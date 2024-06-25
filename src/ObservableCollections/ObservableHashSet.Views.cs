@@ -6,7 +6,7 @@ using ObservableCollections.Sync;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableHashSet<T> : IReadOnlyCollection<T>, IObservableCollection<T>
+public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
 {
     public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool _ = false)
     {
@@ -15,7 +15,7 @@ public sealed partial class ObservableHashSet<T> : IReadOnlyCollection<T>, IObse
 
     private sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
-        protected readonly Func<T, TView> selector;
+        private readonly Func<T, TView> selector;
         private readonly Dictionary<T, (T, TView)> dict;
 
         public View(ObservableHashSet<T> source, Func<T, TView> selector) : base(source)
@@ -23,7 +23,7 @@ public sealed partial class ObservableHashSet<T> : IReadOnlyCollection<T>, IObse
             this.selector = selector;
             lock (source.SyncRoot)
             {
-                dict = source.set.ToDictionary(x => x, x => (x, selector(x)));
+                dict = source.Source.ToDictionary(x => x, x => (x, selector(x)));
             }
         }
 

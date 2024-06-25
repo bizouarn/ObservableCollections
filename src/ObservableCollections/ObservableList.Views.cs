@@ -15,7 +15,7 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
 
     private sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
-        protected readonly Func<T, TView> selector;
+        private readonly Func<T, TView> selector;
         private readonly List<(T, TView)> list;
         private readonly bool reverse;
 
@@ -25,7 +25,7 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
             this.reverse = reverse;
             lock (source.SyncRoot)
             {
-                list = source.list.Select(x => (x, selector(x))).ToList();
+                list = source.Source.Select(x => (x, selector(x))).ToList();
             }
         }
 

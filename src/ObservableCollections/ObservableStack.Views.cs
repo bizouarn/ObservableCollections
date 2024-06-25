@@ -6,7 +6,7 @@ using ObservableCollections.Sync;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableStack<T> : IReadOnlyCollection<T>, IObservableCollection<T>
+public sealed partial class ObservableStack<T> : IObservableCollection<T>
 {
     public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
     {
@@ -15,9 +15,9 @@ public sealed partial class ObservableStack<T> : IReadOnlyCollection<T>, IObserv
 
     private class View<TView> : SynchronizedViewBase<T, TView>
     {
-        protected readonly Func<T, TView> selector;
+        private readonly Func<T, TView> selector;
         private readonly bool reverse;
-        protected readonly Stack<(T, TView)> stack;
+        private readonly Stack<(T, TView)> stack;
 
         public View(ObservableStack<T> source, Func<T, TView> selector, bool reverse) : base(source)
         {
@@ -25,7 +25,7 @@ public sealed partial class ObservableStack<T> : IReadOnlyCollection<T>, IObserv
             this.reverse = reverse;
             lock (source.SyncRoot)
             {
-                stack = new Stack<(T, TView)>(source.stack.Select(x => (x, selector(x))));
+                stack = new Stack<(T, TView)>(source.Source.Select(x => (x, selector(x))));
             }
         }
 

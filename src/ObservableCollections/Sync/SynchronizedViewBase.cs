@@ -13,11 +13,11 @@ public abstract class SynchronizedViewBase<T, TView> : Synchronized, ISynchroniz
 
     public SynchronizedViewBase(IObservableCollection<T> source)
     {
-        this._source = source;
+        _source = source;
         filter = SynchronizedViewFilter<T, TView>.Null;
         lock (source.SyncRoot)
         {
-            this._source.CollectionChanged += SourceCollectionChanged;
+            _source.CollectionChanged += SourceCollectionChanged;
         }
     }
 
