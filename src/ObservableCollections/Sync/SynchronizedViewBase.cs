@@ -4,20 +4,20 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using ObservableCollections.Internal;
 
-namespace ObservableCollections;
+namespace ObservableCollections.Sync;
 
 public abstract class SynchronizedViewBase<T, TView> : Synchronized, ISynchronizedView<T, TView>
 {
-    protected readonly IObservableCollection<T> source;
+    private readonly IObservableCollection<T> _source;
     protected ISynchronizedViewFilter<T, TView> filter;
 
     public SynchronizedViewBase(IObservableCollection<T> source)
     {
-        this.source = source;
+        this._source = source;
         filter = SynchronizedViewFilter<T, TView>.Null;
         lock (source.SyncRoot)
         {
-            this.source.CollectionChanged += SourceCollectionChanged;
+            this._source.CollectionChanged += SourceCollectionChanged;
         }
     }
 
@@ -45,7 +45,7 @@ public abstract class SynchronizedViewBase<T, TView> : Synchronized, ISynchroniz
 
     public void Dispose()
     {
-        source.CollectionChanged -= SourceCollectionChanged;
+        _source.CollectionChanged -= SourceCollectionChanged;
     }
 
     public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
