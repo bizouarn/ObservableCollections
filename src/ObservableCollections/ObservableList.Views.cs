@@ -8,21 +8,19 @@ namespace ObservableCollections;
 
 public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObservableCollection<T>
 {
-    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
     {
-        return new View<TView>(this, transform, reverse);
+        return new View<TView>(this, transform);
     }
 
     private sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
         private readonly Func<T, TView> selector;
         private readonly List<(T, TView)> list;
-        private readonly bool reverse;
 
-        public View(ObservableList<T> source, Func<T, TView> selector, bool reverse) : base(source)
+        public View(ObservableList<T> source, Func<T, TView> selector) : base(source)
         {
             this.selector = selector;
-            this.reverse = reverse;
             lock (source.SyncRoot)
             {
                 list = source.Source.Select(x => (x, selector(x))).ToList();
@@ -72,7 +70,7 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
         {
             lock (SyncRoot)
             {
-                foreach (var item in reverse ? list.AsEnumerable().Reverse() : list)
+                foreach (var item in list)
                     if (filter.IsMatch(item.Item1, item.Item2))
                         yield return item;
             }

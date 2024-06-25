@@ -12,7 +12,7 @@ public delegate void NotifyCollectionChangedEventHandler<T>(in NotifyCollectionC
 public interface IObservableCollection<T> : ISynchronized, IReadOnlyCollection<T>
 {
     event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
-    ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false);
+    ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform);
 }
 
 public interface IReadOnlyObservableDictionary<TKey, TValue> :
@@ -22,7 +22,7 @@ public interface IReadOnlyObservableDictionary<TKey, TValue> :
 
 public interface IFreezedCollection<T>
 {
-    ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false);
+    ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform);
     ISortableSynchronizedView<T, TView> CreateSortableView<TView>(Func<T, TView> transform);
 }
 

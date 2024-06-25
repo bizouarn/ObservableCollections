@@ -8,7 +8,7 @@ namespace ObservableCollections;
 
 public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
 {
-    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool _ = false)
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
     {
         return new View<TView>(this, transform);
     }

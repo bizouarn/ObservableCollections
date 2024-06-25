@@ -8,21 +8,19 @@ namespace ObservableCollections;
 
 public sealed partial class ObservableStack<T> : IObservableCollection<T>
 {
-    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
     {
-        return new View<TView>(this, transform, reverse);
+        return new View<TView>(this, transform);
     }
 
     private class View<TView> : SynchronizedViewBase<T, TView>
     {
         private readonly Func<T, TView> selector;
-        private readonly bool reverse;
         private readonly Stack<(T, TView)> stack;
 
-        public View(ObservableStack<T> source, Func<T, TView> selector, bool reverse) : base(source)
+        public View(ObservableStack<T> source, Func<T, TView> selector) : base(source)
         {
             this.selector = selector;
-            this.reverse = reverse;
             lock (source.SyncRoot)
             {
                 stack = new Stack<(T, TView)>(source.Source.Select(x => (x, selector(x))));
@@ -69,7 +67,7 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
         {
             lock (SyncRoot)
             {
-                foreach (var item in reverse ? stack.AsEnumerable().Reverse() : stack)
+                foreach (var item in stack)
                     if (filter.IsMatch(item.Item1, item.Item2))
                         yield return item;
             }

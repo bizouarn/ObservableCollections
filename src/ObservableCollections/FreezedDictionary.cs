@@ -48,9 +48,9 @@ public sealed class FreezedDictionary<TKey, TValue> : IReadOnlyDictionary<TKey, 
     }
 
     public ISynchronizedView<KeyValuePair<TKey, TValue>, TView> CreateView<TView>(
-        Func<KeyValuePair<TKey, TValue>, TView> transform, bool reverse = false)
+        Func<KeyValuePair<TKey, TValue>, TView> transform)
     {
-        return new FreezedView<KeyValuePair<TKey, TValue>, TView>(dictionary, transform, reverse);
+        return new FreezedView<KeyValuePair<TKey, TValue>, TView>(dictionary, transform);
     }
 
     public ISortableSynchronizedView<KeyValuePair<TKey, TValue>, TView> CreateSortableView<TView>(

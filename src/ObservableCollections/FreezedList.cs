@@ -21,9 +21,9 @@ public sealed class FreezedList<T> : IReadOnlyList<T>, IFreezedCollection<T>
         this.list = list;
     }
 
-    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
     {
-        return new FreezedView<T, TView>(list, transform, reverse);
+        return new FreezedView<T, TView>(list, transform);
     }
 
     public ISortableSynchronizedView<T, TView> CreateSortableView<TView>(Func<T, TView> transform)

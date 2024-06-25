@@ -10,7 +10,6 @@ namespace ObservableCollections.Internal;
 
 internal sealed class FreezedView<T, TView> : Synchronized, ISynchronizedView<T, TView>
 {
-    private readonly bool reverse;
     private readonly List<(T, TView)> list;
 
     private ISynchronizedViewFilter<T, TView> filter;
@@ -29,9 +28,8 @@ internal sealed class FreezedView<T, TView> : Synchronized, ISynchronizedView<T,
     public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
     public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
 
-    public FreezedView(IEnumerable<T> source, Func<T, TView> selector, bool reverse)
+    public FreezedView(IEnumerable<T> source, Func<T, TView> selector)
     {
-        this.reverse = reverse;
         filter = SynchronizedViewFilter<T, TView>.Null;
         list = source.Select(x => (x, selector(x))).ToList();
     }
@@ -78,7 +76,7 @@ internal sealed class FreezedView<T, TView> : Synchronized, ISynchronizedView<T,
     {
         lock (SyncRoot)
         {
-            foreach (var item in reverse ? list.AsEnumerable().Reverse() : list)
+            foreach (var item in list)
                 if (filter.IsMatch(item.Item1, item.Item2))
                     yield return item;
         }

@@ -8,22 +8,20 @@ namespace ObservableCollections;
 
 public sealed partial class ObservableRingBuffer<T>
 {
-    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
     {
-        return new View<TView>(this, transform, reverse);
+        return new View<TView>(this, transform);
     }
 
     // used with ObservableFixedSizeRingBuffer
     internal sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
         private readonly Func<T, TView> selector;
-        private readonly bool reverse;
         private readonly RingBuffer<(T, TView)> ringBuffer;
 
-        public View(IObservableCollection<T> source, Func<T, TView> selector, bool reverse) : base(source)
+        public View(IObservableCollection<T> source, Func<T, TView> selector) : base(source)
         {
             this.selector = selector;
-            this.reverse = reverse;
             lock (source.SyncRoot)
             {
                 ringBuffer = new RingBuffer<(T, TView)>(source.Select(x => (x, selector(x))));
@@ -73,7 +71,7 @@ public sealed partial class ObservableRingBuffer<T>
         {
             lock (SyncRoot)
             {
-                foreach (var item in reverse ? ringBuffer.AsEnumerable().Reverse() : ringBuffer)
+                foreach (var item in ringBuffer)
                     if (filter.IsMatch(item.Item1, item.Item2))
                         yield return item;
             }

@@ -260,8 +260,8 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedCollection<T,
         }
     }
 
-    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
     {
-        return new ObservableRingBuffer<T>.View<TView>(this, transform, reverse);
+        return new ObservableRingBuffer<T>.View<TView>(this, transform);
     }
 }
