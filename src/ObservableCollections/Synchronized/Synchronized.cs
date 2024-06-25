@@ -1,7 +1,6 @@
-﻿namespace ObservableCollections
+﻿namespace ObservableCollections;
+
+public class Synchronized : ISynchronized
 {
-    public class Synchronized : ISynchronized
-    {
-        public object SyncRoot { get; } = new object();
-    }
+    public object SyncRoot { get; } = new();
 }

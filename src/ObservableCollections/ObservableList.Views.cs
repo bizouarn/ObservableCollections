@@ -1,226 +1,178 @@
-﻿using ObservableCollections.Internal;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 
-namespace ObservableCollections
+namespace ObservableCollections;
+
+public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObservableCollection<T>
 {
-    public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObservableCollection<T>
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
     {
-        public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false)
+        return new View<TView>(this, transform, reverse);
+    }
+
+    private sealed class View<TView> : SynchronizedView<T, TView>
+    {
+        private readonly List<(T, TView)> list;
+        private readonly bool reverse;
+
+        public View(ObservableList<T> source, Func<T, TView> selector, bool reverse) : base(source, selector)
         {
-            return new View<TView>(this, transform, reverse);
+            this.reverse = reverse;
+            lock (source.SyncRoot)
+            {
+                list = source.list.Select(x => (x, selector(x))).ToList();
+            }
         }
 
-        sealed class View<TView> : Synchronized, ISynchronizedView<T, TView>
+        public override int Count
         {
-            public ISynchronizedViewFilter<T, TView> CurrentFilter
-            {
-                get
-                {
-                    lock (SyncRoot) { return filter; }
-                }
-            }
-
-            readonly ObservableList<T> source;
-            readonly Func<T, TView> selector;
-            readonly bool reverse;
-            readonly List<(T, TView)> list;
-
-            ISynchronizedViewFilter<T, TView> filter;
-
-            public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
-            public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
-
-            public View(ObservableList<T> source, Func<T, TView> selector, bool reverse)
-            {
-                this.source = source;
-                this.selector = selector;
-                this.reverse = reverse;
-                this.filter = SynchronizedViewFilter<T, TView>.Null;
-                lock (source.SyncRoot)
-                {
-                    this.list = source.list.Select(x => (x, selector(x))).ToList();
-                    this.source.CollectionChanged += SourceCollectionChanged;
-                }
-            }
-
-            public int Count
-            {
-                get
-                {
-                    lock (SyncRoot)
-                    {
-                        return list.Count;
-                    }
-                }
-            }
-
-            public void AttachFilter(ISynchronizedViewFilter<T, TView> filter, bool invokeAddEventForCurrentElements = false)
+            get
             {
                 lock (SyncRoot)
                 {
-                    this.filter = filter;
-                    for (var i = 0; i < list.Count; i++)
-                    {
-                        var (value, view) = list[i];
-                        if (invokeAddEventForCurrentElements)
+                    return list.Count;
+                }
+            }
+        }
+
+        public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter,
+            bool invokeAddEventForCurrentElements = false)
+        {
+            lock (SyncRoot)
+            {
+                this.filter = filter;
+                for (var i = 0; i < list.Count; i++)
+                {
+                    var (value, view) = list[i];
+                    if (invokeAddEventForCurrentElements)
+                        filter.InvokeOnAdd(value, view, i);
+                    else
+                        filter.InvokeOnAttach(value, view);
+                }
+            }
+        }
+
+        public override void ResetFilter(Action<T, TView>? resetAction)
+        {
+            lock (SyncRoot)
+            {
+                filter = SynchronizedViewFilter<T, TView>.Null;
+                if (resetAction != null)
+                    foreach (var (item, view) in list)
+                        resetAction(item, view);
+            }
+        }
+
+        public override IEnumerator<(T, TView)> GetEnumerator()
+        {
+            lock (SyncRoot)
+            {
+                foreach (var item in reverse ? list.AsEnumerable().Reverse() : list)
+                    if (filter.IsMatch(item.Item1, item.Item2))
+                        yield return item;
+            }
+        }
+
+        protected override void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
+        {
+            lock (SyncRoot)
+            {
+                switch (e.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        // Add
+                        if (e.NewStartingIndex == list.Count)
                         {
-                            filter.InvokeOnAdd(value, view, i);
+                            if (e.IsSingleItem)
+                            {
+                                var v = (e.NewItem, selector(e.NewItem));
+                                list.Add(v);
+                                filter.InvokeOnAdd(v, e.NewStartingIndex);
+                            }
+                            else
+                            {
+                                var i = e.NewStartingIndex;
+                                foreach (var item in e.NewItems)
+                                {
+                                    var v = (item, selector(item));
+                                    list.Add(v);
+                                    filter.InvokeOnAdd(v, i++);
+                                }
+                            }
+                        }
+                        // Insert
+                        else
+                        {
+                            if (e.IsSingleItem)
+                            {
+                                var v = (e.NewItem, selector(e.NewItem));
+                                list.Insert(e.NewStartingIndex, v);
+                                filter.InvokeOnAdd(v, e.NewStartingIndex);
+                            }
+                            else
+                            {
+                                // inefficient copy, need refactoring
+                                var newArray = new (T, TView)[e.NewItems.Length];
+                                var span = e.NewItems;
+                                for (var i = 0; i < span.Length; i++)
+                                {
+                                    var v = (span[i], selector(span[i]));
+                                    newArray[i] = v;
+                                    filter.InvokeOnAdd(v, e.NewStartingIndex + i);
+                                }
+
+                                list.InsertRange(e.NewStartingIndex, newArray);
+                            }
+                        }
+
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        if (e.IsSingleItem)
+                        {
+                            var v = list[e.OldStartingIndex];
+                            list.RemoveAt(e.OldStartingIndex);
+                            filter.InvokeOnRemove(v, e.OldStartingIndex);
                         }
                         else
                         {
-                            filter.InvokeOnAttach(value, view);
-                        }
-                    }
-                }
-            }
+                            var len = e.OldStartingIndex + e.OldItems.Length;
+                            for (var i = e.OldStartingIndex; i < len; i++)
+                            {
+                                var v = list[i];
+                                filter.InvokeOnRemove(v, e.OldStartingIndex + i);
+                            }
 
-            public void ResetFilter(Action<T, TView>? resetAction)
-            {
-                lock (SyncRoot)
-                {
-                    this.filter = SynchronizedViewFilter<T, TView>.Null;
-                    if (resetAction != null)
+                            list.RemoveRange(e.OldStartingIndex, e.OldItems.Length);
+                        }
+
+                        break;
+                    case NotifyCollectionChangedAction.Replace:
+                        // ObservableList does not support replace range
                     {
-                        foreach (var (item, view) in list)
-                        {
-                            resetAction(item, view);
-                        }
+                        var v = (e.NewItem, selector(e.NewItem));
+                        var ov = (e.OldItem, list[e.OldStartingIndex].Item2);
+                        list[e.NewStartingIndex] = v;
+                        filter.InvokeOnReplace(v, ov, e.NewStartingIndex);
+                        break;
                     }
-                }
-            }
-
-            public INotifyCollectionChangedSynchronizedView<TView> ToNotifyCollectionChanged()
-            {
-                lock (SyncRoot)
-                {
-                    return new NotifyCollectionChangedSynchronizedView<T, TView>(this);
-                }
-            }
-
-            public IEnumerator<(T, TView)> GetEnumerator()
-            {
-                lock (SyncRoot)
-                {
-                    foreach (var item in reverse ? list.AsEnumerable().Reverse() : list)
+                    case NotifyCollectionChangedAction.Move:
                     {
-                        if (filter.IsMatch(item.Item1, item.Item2))
-                        {
-                            yield return item;
-                        }
+                        var removeItem = list[e.OldStartingIndex];
+                        list.RemoveAt(e.OldStartingIndex);
+                        list.Insert(e.NewStartingIndex, removeItem);
+
+                        filter.InvokeOnMove(removeItem, e.NewStartingIndex, e.OldStartingIndex);
                     }
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        list.Clear();
+                        filter.InvokeOnReset();
+                        break;
                 }
-            }
 
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-            public void Dispose()
-            {
-                this.source.CollectionChanged -= SourceCollectionChanged;
-            }
-
-            private void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
-            {
-                lock (SyncRoot)
-                {
-                    switch (e.Action)
-                    {
-                        case NotifyCollectionChangedAction.Add:
-                            // Add
-                            if (e.NewStartingIndex == list.Count)
-                            {
-                                if (e.IsSingleItem)
-                                {
-                                    var v = (e.NewItem, selector(e.NewItem));
-                                    list.Add(v);
-                                    filter.InvokeOnAdd(v, e.NewStartingIndex);
-                                }
-                                else
-                                {
-                                    var i = e.NewStartingIndex;
-                                    foreach (var item in e.NewItems)
-                                    {
-                                        var v = (item, selector(item));
-                                        list.Add(v);
-                                        filter.InvokeOnAdd(v, i++);
-                                    }
-                                }
-                            }
-                            // Insert
-                            else
-                            {
-                                if (e.IsSingleItem)
-                                {
-                                    var v = (e.NewItem, selector(e.NewItem));
-                                    list.Insert(e.NewStartingIndex, v);
-                                    filter.InvokeOnAdd(v, e.NewStartingIndex);
-                                }
-                                else
-                                {
-                                    // inefficient copy, need refactoring
-                                    var newArray = new (T, TView)[e.NewItems.Length];
-                                    var span = e.NewItems;
-                                    for (var i = 0; i < span.Length; i++)
-                                    {
-                                        var v = (span[i], selector(span[i]));
-                                        newArray[i] = v;
-                                        filter.InvokeOnAdd(v, e.NewStartingIndex + i);
-                                    }
-                                    list.InsertRange(e.NewStartingIndex, newArray);
-                                }
-                            }
-                            break;
-                        case NotifyCollectionChangedAction.Remove:
-                            if (e.IsSingleItem)
-                            {
-                                var v = list[e.OldStartingIndex];
-                                list.RemoveAt(e.OldStartingIndex);
-                                filter.InvokeOnRemove(v, e.OldStartingIndex);
-                            }
-                            else
-                            {
-                                var len = e.OldStartingIndex + e.OldItems.Length;
-                                for (var i = e.OldStartingIndex; i < len; i++)
-                                {
-                                    var v = list[i];
-                                    filter.InvokeOnRemove(v, e.OldStartingIndex + i);
-                                }
-
-                                list.RemoveRange(e.OldStartingIndex, e.OldItems.Length);
-                            }
-                            break;
-                        case NotifyCollectionChangedAction.Replace:
-                            // ObservableList does not support replace range
-                        {
-                            var v = (e.NewItem, selector(e.NewItem));
-                            var ov = (e.OldItem, list[e.OldStartingIndex].Item2);
-                            list[e.NewStartingIndex] = v;
-                            filter.InvokeOnReplace(v, ov, e.NewStartingIndex);
-                            break;
-                        }
-                        case NotifyCollectionChangedAction.Move:
-                        {
-                            var removeItem = list[e.OldStartingIndex];
-                            list.RemoveAt(e.OldStartingIndex);
-                            list.Insert(e.NewStartingIndex, removeItem);
-
-                            filter.InvokeOnMove(removeItem, e.NewStartingIndex, e.OldStartingIndex);
-                        }
-                            break;
-                        case NotifyCollectionChangedAction.Reset:
-                            list.Clear();
-                            filter.InvokeOnReset();
-                            break;
-                        default:
-                            break;
-                    }
-
-                    RoutingCollectionChanged?.Invoke(e);
-                    CollectionStateChanged?.Invoke(e.Action);
-                }
+                base.SourceCollectionChanged(e);
             }
         }
     }

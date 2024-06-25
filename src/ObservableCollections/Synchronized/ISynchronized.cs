@@ -1,7 +1,6 @@
-﻿namespace ObservableCollections
+﻿namespace ObservableCollections;
+
+public interface ISynchronized
 {
-    public interface ISynchronized
-    {
-        public object SyncRoot { get; }
-    }
+    public object SyncRoot { get; }
 }

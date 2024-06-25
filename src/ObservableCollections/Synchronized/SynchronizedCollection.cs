@@ -13,16 +13,19 @@ public abstract class SynchronizedCollection<T> : Synchronized, IReadOnlyCollect
     {
         lock (SyncRoot)
         {
-            foreach (var item in Source)
-            {
-                yield return item;
-            }
+            foreach (var item in Source) yield return item;
         }
     }
 
     /// <summary>Returns an enumerator that iterates through a collection.</summary>
-    /// <returns>An <see cref="T:System.Collections.IEnumerator"></see> object that can be used to iterate through the collection.</returns>
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    /// <returns>
+    ///     An <see cref="T:System.Collections.IEnumerator"></see> object that can be used to iterate through the
+    ///     collection.
+    /// </returns>
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 
     /// <summary>Gets the number of elements in the collection.</summary>
     /// <returns>The number of elements in the collection.</returns>

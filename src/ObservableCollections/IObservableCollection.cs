@@ -24,25 +24,7 @@ namespace ObservableCollections
         ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform, bool reverse = false);
         ISortableSynchronizedView<T, TView> CreateSortableView<TView>(Func<T, TView> transform);
     }
-
-    public interface ISynchronizedView<T, TView> : ISynchronized, IReadOnlyCollection<(T Value, TView View)>, IDisposable
-    {
-        ISynchronizedViewFilter<T, TView> CurrentFilter { get; }
-
-        event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
-        event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
-
-        void AttachFilter(ISynchronizedViewFilter<T, TView> filter, bool invokeAddEventForInitialElements = false);
-        void ResetFilter(Action<T, TView>? resetAction);
-        INotifyCollectionChangedSynchronizedView<TView> ToNotifyCollectionChanged();
-    }
-
-    public interface ISortableSynchronizedView<T, TView> : ISynchronizedView<T, TView>
-    {
-        void Sort(IComparer<T> comparer);
-        void Sort(IComparer<TView> viewComparer);
-    }
-
+    
     // will be implemented in the future?
     //public interface IGroupedSynchoronizedView<T, TKey, TView> : ILookup<TKey, (T, TView)>, ISynchronizedView<T, TView>
     //{
