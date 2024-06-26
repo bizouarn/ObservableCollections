@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using ObservableCollections.Comp;
 
 namespace ObservableCollections.Internal;
 
@@ -13,6 +14,12 @@ internal sealed class FreezedView<T, TView> : Synchronized, ISynchronizedView<T,
     private readonly List<(T, TView)> list;
 
     private ISynchronizedViewFilter<T, TView> filter;
+
+    public FreezedView(IEnumerable<T> source, Func<T, TView> selector)
+    {
+        filter = SynchronizedViewFilter<T, TView>.Null;
+        list = source.Select(x => (x, selector(x))).ToList();
+    }
 
     public ISynchronizedViewFilter<T, TView> CurrentFilter
     {
@@ -27,12 +34,6 @@ internal sealed class FreezedView<T, TView> : Synchronized, ISynchronizedView<T,
 
     public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
     public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
-
-    public FreezedView(IEnumerable<T> source, Func<T, TView> selector)
-    {
-        filter = SynchronizedViewFilter<T, TView>.Null;
-        list = source.Select(x => (x, selector(x))).ToList();
-    }
 
     public int Count
     {
@@ -103,6 +104,12 @@ internal sealed class FreezedSortableView<T, TView> : Synchronized, ISortableSyn
 
     private ISynchronizedViewFilter<T, TView> filter;
 
+    public FreezedSortableView(IEnumerable<T> source, Func<T, TView> selector)
+    {
+        filter = SynchronizedViewFilter<T, TView>.Null;
+        array = source.Select(x => (x, selector(x))).ToArray();
+    }
+
     public ISynchronizedViewFilter<T, TView> CurrentFilter
     {
         get
@@ -116,12 +123,6 @@ internal sealed class FreezedSortableView<T, TView> : Synchronized, ISortableSyn
 
     public event Action<NotifyCollectionChangedAction>? CollectionStateChanged;
     public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged;
-
-    public FreezedSortableView(IEnumerable<T> source, Func<T, TView> selector)
-    {
-        filter = SynchronizedViewFilter<T, TView>.Null;
-        array = source.Select(x => (x, selector(x))).ToArray();
-    }
 
     public int Count
     {
@@ -182,46 +183,16 @@ internal sealed class FreezedSortableView<T, TView> : Synchronized, ISortableSyn
 
     public void Sort(IComparer<T> comparer)
     {
-        Array.Sort(array, new TComparer(comparer));
+        Array.Sort(array, new TypeComparerKey<T, TView>(comparer));
     }
 
     public void Sort(IComparer<TView> viewComparer)
     {
-        Array.Sort(array, new TViewComparer(viewComparer));
+        Array.Sort(array, new TypeComparerValue<T, TView>(viewComparer));
     }
 
     public INotifyCollectionChangedSynchronizedView<TView> ToNotifyCollectionChanged()
     {
         return new NotifyCollectionChangedSynchronizedView<T, TView>(this);
-    }
-
-    private class TComparer : IComparer<(T, TView)>
-    {
-        private readonly IComparer<T> comparer;
-
-        public TComparer(IComparer<T> comparer)
-        {
-            this.comparer = comparer;
-        }
-
-        public int Compare((T, TView) x, (T, TView) y)
-        {
-            return comparer.Compare(x.Item1, y.Item1);
-        }
-    }
-
-    private class TViewComparer : IComparer<(T, TView)>
-    {
-        private readonly IComparer<TView> comparer;
-
-        public TViewComparer(IComparer<TView> comparer)
-        {
-            this.comparer = comparer;
-        }
-
-        public int Compare((T, TView) x, (T, TView) y)
-        {
-            return comparer.Compare(x.Item2, y.Item2);
-        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using ObservableCollections.Comp;
 using ObservableCollections.Sync;
 
 namespace ObservableCollections.Internal;
@@ -8,10 +9,10 @@ namespace ObservableCollections.Internal;
 internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, TView>
     where TKey : notnull
 {
-    private readonly Func<T, TView> transform;
     private readonly Func<T, TKey> identitySelector;
-    private readonly Dictionary<TKey, TView> viewMap; // view-map needs to use in remove.
     private readonly SortedList<(TView View, TKey Key), (T Value, TView View)> list;
+    private readonly Func<T, TView> transform;
+    private readonly Dictionary<TKey, TView> viewMap; // view-map needs to use in remove.
 
     public SortedViewViewComparer(IObservableCollection<T> source, Func<T, TKey> identitySelector,
         Func<T, TView> transform, IComparer<TView> comparer)
@@ -194,28 +195,22 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
                     viewMap.Clear();
                     filter.InvokeOnReset();
                     break;
-                default:
-                    break;
             }
 
             base.SourceCollectionChanged(e);
         }
     }
 
-    private sealed class Comparer : IComparer<(TView view, TKey id)>
+    private sealed class Comparer : TypeComparerKey<TView, TKey>
     {
-        private readonly IComparer<TView> comparer;
-
-        public Comparer(IComparer<TView> comparer)
+        public Comparer(IComparer<TView> comparer) : base(comparer)
         {
-            this.comparer = comparer;
         }
 
-        public int Compare((TView view, TKey id) x, (TView view, TKey id) y)
+        public override int Compare((TView, TKey) x, (TView, TKey) y)
         {
-            var compare = comparer.Compare(x.view, y.view);
-            if (compare == 0) compare = Comparer<TKey>.Default.Compare(x.id, y.id);
-
+            var compare = base.Compare(x, y);
+            if (compare == 0) compare = Comparer<TKey>.Default.Compare(x.Item2, y.Item2);
             return compare;
         }
     }

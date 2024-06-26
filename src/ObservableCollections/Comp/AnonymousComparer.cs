@@ -5,8 +5,8 @@ namespace ObservableCollections.Comp;
 
 internal class AnonymousComparer<T, TCompare> : IComparer<T>
 {
-    private readonly Func<T, TCompare> _selector;
     private readonly int _f;
+    private readonly Func<T, TCompare> _selector;
 
     public AnonymousComparer(Func<T, TCompare> selector, bool ascending)
     {
