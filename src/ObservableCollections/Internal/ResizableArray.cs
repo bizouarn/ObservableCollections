@@ -45,7 +45,7 @@ internal struct ResizableArray<T> : IDisposable
     }
 
     [DoesNotReturn]
-    private void Throw()
+    private static void Throw()
     {
         throw new ObjectDisposedException("ResizableArray");
     }

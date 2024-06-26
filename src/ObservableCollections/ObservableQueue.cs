@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableQueue<T> : SynchronizedCollection<Queue<T>, T>, IObservableCollection<T>
+public sealed partial class ObservableQueue<T> : SynchronizedCollection<Queue<T>, T>
 {
     public ObservableQueue()
     {

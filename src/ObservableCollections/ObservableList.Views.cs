@@ -6,7 +6,7 @@ using ObservableCollections.Sync;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObservableCollection<T>
+public sealed partial class ObservableList<T> : IObservableCollection<T>
 {
     public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
     {
@@ -17,7 +17,7 @@ public sealed partial class ObservableList<T> : IList<T>, IReadOnlyList<T>, IObs
     {
         private readonly Func<T, TView> selector;
 
-        public View(ObservableList<T> source, Func<T, TView> selector) 
+        public View(ObservableList<T> source, Func<T, TView> selector)
             : base(source, source.Source.Select(x => (x, selector(x))).ToList())
         {
             this.selector = selector;

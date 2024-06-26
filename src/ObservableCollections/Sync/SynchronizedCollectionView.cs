@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+
 namespace ObservableCollections.Sync;
 
-public abstract class SynchronizedCollectionView<T, TView, TList> : SynchronizedViewBase<T, TView> where TList : IReadOnlyCollection<(T, TView)>
+public abstract class SynchronizedCollectionView<T, TView, TList> : SynchronizedViewBase<T, TView>
+    where TList : IReadOnlyCollection<(T, TView)>
 {
     protected readonly TList View;
 

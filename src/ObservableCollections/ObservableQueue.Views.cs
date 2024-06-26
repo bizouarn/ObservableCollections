@@ -17,7 +17,7 @@ public sealed partial class ObservableQueue<T> : IObservableCollection<T>
     {
         private readonly Func<T, TView> selector;
 
-        public View(ObservableQueue<T> source, Func<T, TView> selector) 
+        public View(ObservableQueue<T> source, Func<T, TView> selector)
             : base(source, new Queue<(T, TView)>(source.Source.Select(x => (x, selector(x)))))
         {
             this.selector = selector;

@@ -178,22 +178,6 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
         AddLast(item);
     }
 
-    public bool Contains(T item)
-    {
-        lock (SyncRoot)
-        {
-            return Source.Contains(item);
-        }
-    }
-
-    public void CopyTo(T[] array, int arrayIndex)
-    {
-        lock (SyncRoot)
-        {
-            Source.CopyTo(array, arrayIndex);
-        }
-    }
-
     public int BinarySearch(T item)
     {
         lock (SyncRoot)

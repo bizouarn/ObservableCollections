@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableList<T> : SynchronizedList<List<T>, T>, IObservableCollection<T>
+public sealed partial class ObservableList<T> : SynchronizedList<List<T>, T>
 {
     public ObservableList()
     {

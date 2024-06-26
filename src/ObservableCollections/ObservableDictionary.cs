@@ -3,7 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableDictionary<TKey, TValue> : SynchronizedCollection<Dictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>,
+public sealed partial class ObservableDictionary<TKey, TValue> :
+    SynchronizedCollection<Dictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>,
     IDictionary<TKey, TValue>,
     IReadOnlyObservableDictionary<TKey, TValue>
     where TKey : notnull

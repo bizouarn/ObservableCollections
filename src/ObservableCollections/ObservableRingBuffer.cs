@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ObservableCollections;
 
-public sealed partial class ObservableRingBuffer<T> : SynchronizedList<RingBuffer<T>, T>, IReadOnlyList<T>,
+public sealed partial class ObservableRingBuffer<T> : SynchronizedList<RingBuffer<T>, T>,
     IObservableCollection<T>
 {
     public ObservableRingBuffer()

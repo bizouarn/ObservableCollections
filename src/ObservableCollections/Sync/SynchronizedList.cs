@@ -2,9 +2,9 @@
 
 namespace ObservableCollections;
 
-public abstract class SynchronizedList<TCol, TSub> 
-    : SynchronizedCollection<TCol, TSub>, IList<TSub>, IReadOnlyList<TSub>, ICollection<TSub>
-    where TCol : IList<TSub>, IEnumerable<TSub>, IReadOnlyCollection<TSub>, ICollection<TSub>
+public abstract class SynchronizedList<TCol, TSub>
+    : SynchronizedCollection<TCol, TSub>, IList<TSub>, IReadOnlyList<TSub>
+    where TCol : class, IList<TSub>, IEnumerable<TSub>, IReadOnlyCollection<TSub>, ICollection<TSub>
 {
     public TSub this[int index]
     {
@@ -21,7 +21,8 @@ public abstract class SynchronizedList<TCol, TSub>
             {
                 var oldValue = Source[index];
                 Source[index] = value;
-                CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<TSub>.Replace(value, oldValue, index, index));
+                CollectionChanged?.Invoke(
+                    NotifyCollectionChangedEventArgs<TSub>.Replace(value, oldValue, index, index));
             }
         }
     }
@@ -34,7 +35,7 @@ public abstract class SynchronizedList<TCol, TSub>
     {
         lock (SyncRoot)
         {
-            var index = ((IList<TSub>)Source).Count;
+            var index = ((IList<TSub>) Source).Count;
             Source.Add(item);
             CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<TSub>.Add(item, index));
         }

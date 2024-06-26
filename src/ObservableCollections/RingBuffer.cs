@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace ObservableCollections;
 
-public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>, ICollection<T>
+public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
 {
     private T[] buffer;
     private int head;

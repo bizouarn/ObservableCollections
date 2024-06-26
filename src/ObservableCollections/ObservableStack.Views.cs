@@ -17,13 +17,13 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
     {
         private readonly Func<T, TView> selector;
 
-        public View(ObservableStack<T> source, Func<T, TView> selector) 
+        public View(ObservableStack<T> source, Func<T, TView> selector)
             : base(source, new Stack<(T, TView)>(source.Source.Select(x => (x, selector(x)))))
         {
             this.selector = selector;
         }
 
-        public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter, 
+        public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter,
             bool invokeAddEventForCurrentElements = false)
         {
             lock (SyncRoot)

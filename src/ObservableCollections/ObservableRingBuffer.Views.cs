@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using ObservableCollections.Sync;
@@ -18,11 +17,12 @@ public sealed partial class ObservableRingBuffer<T>
     {
         private readonly Func<T, TView> selector;
 
-        public View(IObservableCollection<T> source, Func<T, TView> selector) 
+        public View(IObservableCollection<T> source, Func<T, TView> selector)
             : base(source, new RingBuffer<(T, TView)>(source.Select(x => (x, selector(x)))))
         {
             this.selector = selector;
         }
+
         protected override void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
         {
             lock (SyncRoot)

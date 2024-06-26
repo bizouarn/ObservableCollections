@@ -1,12 +1,10 @@
 using ObservableCollections.Internal;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace ObservableCollections;
 
-public sealed class FreezedList<T> : FreezedCollection<IReadOnlyList<T>,T>, IReadOnlyList<T>
+public sealed class FreezedList<T> : FreezedCollection<IReadOnlyList<T>, T>, IReadOnlyList<T>
 {
     public T this[int index] => Collection[index];
 

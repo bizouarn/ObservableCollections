@@ -1,16 +1,15 @@
 ﻿#nullable disable
 
 using ObservableCollections.Internal;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace ObservableCollections;
 
-public sealed class FreezedDictionary<TKey, TValue> : FreezedCollection<IReadOnlyDictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>, IReadOnlyDictionary<TKey, TValue>
+public sealed class FreezedDictionary<TKey, TValue> :
+    FreezedCollection<IReadOnlyDictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>, IReadOnlyDictionary<TKey, TValue>
     where TKey : notnull
 {
-
     public FreezedDictionary(IReadOnlyDictionary<TKey, TValue> dictionary) : base(dictionary)
     {
     }

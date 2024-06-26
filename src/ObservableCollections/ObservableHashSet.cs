@@ -7,7 +7,7 @@ using System.Linq;
 namespace ObservableCollections;
 
 // can not implements ISet<T> because set operation can not get added/removed values.
-public sealed partial class ObservableHashSet<T> : SynchronizedCollection<HashSet<T>, T>, IReadOnlySet<T>, IObservableCollection<T>
+public sealed partial class ObservableHashSet<T> : SynchronizedCollection<HashSet<T>, T>, IReadOnlySet<T>
     where T : notnull
 {
     public ObservableHashSet()
@@ -16,7 +16,6 @@ public sealed partial class ObservableHashSet<T> : SynchronizedCollection<HashSe
     }
 
 #if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
-
     public ObservableHashSet(int capacity)
     {
         Source = new HashSet<T>(capacity);
@@ -145,7 +144,6 @@ public sealed partial class ObservableHashSet<T> : SynchronizedCollection<HashSe
     }
 
 #if !NETSTANDARD2_0 && !NET_STANDARD_2_0 && !NET_4_6
-
     public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
     {
         lock (SyncRoot)
