@@ -1,22 +1,20 @@
-﻿using ObservableCollections.Internal;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using ObservableCollections.Internal;
 
 namespace ObservableCollections;
 
 public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuffer<T>, T>, IObservableCollection<T>
 {
-    private readonly int capacity;
-
     public ObservableFixedSizeRingBuffer(int capacity)
     {
-        this.capacity = capacity;
+        this.Capacity = capacity;
         Source = new RingBuffer<T>(capacity);
     }
 
     public ObservableFixedSizeRingBuffer(int capacity, IEnumerable<T> collection)
     {
-        this.capacity = capacity;
+        this.Capacity = capacity;
         Source = new RingBuffer<T>(capacity);
         foreach (var item in collection)
         {
@@ -25,16 +23,21 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
         }
     }
 
-    public int Capacity => capacity;
+    public int Capacity { get; }
+
+    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
+    {
+        return new ObservableRingBuffer<T>.View<TView>(this, transform);
+    }
 
     public void AddFirst(T item)
     {
         lock (SyncRoot)
         {
-            if (capacity == Source.Count)
+            if (Capacity == Source.Count)
             {
                 var remItem = Source.RemoveLast();
-                InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(remItem, capacity - 1));
+                InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(remItem, Capacity - 1));
             }
 
             Source.AddFirst(item);
@@ -46,7 +49,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
     {
         lock (SyncRoot)
         {
-            if (capacity == Source.Count)
+            if (Capacity == Source.Count)
             {
                 var remItem = Source.RemoveFirst();
                 InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Remove(remItem, 0));
@@ -86,10 +89,10 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
         {
             using (var xs = new CloneCollection<T>(items))
             {
-                if (capacity <= Source.Count + xs.Span.Length)
+                if (Capacity <= Source.Count + xs.Span.Length)
                 {
                     // calc remove count
-                    var remCount = Math.Min(Source.Count, Source.Count + xs.Span.Length - capacity);
+                    var remCount = Math.Min(Source.Count, Source.Count + xs.Span.Length - Capacity);
                     using (var ys = new ResizableArray<T>(remCount))
                     {
                         for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
@@ -100,7 +103,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
 
                 var index = Source.Count;
                 var span = xs.Span;
-                if (span.Length > capacity) span = span.Slice(span.Length - capacity);
+                if (span.Length > Capacity) span = span.Slice(span.Length - Capacity);
 
                 foreach (var item in span) Source.AddLast(item);
                 InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Add(span, index));
@@ -112,10 +115,10 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
     {
         lock (SyncRoot)
         {
-            if (capacity <= Source.Count + items.Length)
+            if (Capacity <= Source.Count + items.Length)
             {
                 // calc remove count
-                var remCount = Math.Min(Source.Count, Source.Count + items.Length - capacity);
+                var remCount = Math.Min(Source.Count, Source.Count + items.Length - Capacity);
                 using (var ys = new ResizableArray<T>(remCount))
                 {
                     for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
@@ -126,7 +129,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
 
             var index = Source.Count;
             var span = items.AsSpan();
-            if (span.Length > capacity) span = span.Slice(span.Length - capacity);
+            if (span.Length > Capacity) span = span.Slice(span.Length - Capacity);
 
             foreach (var item in span) Source.AddLast(item);
             InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Add(span, index));
@@ -137,10 +140,10 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
     {
         lock (SyncRoot)
         {
-            if (capacity <= Source.Count + items.Length)
+            if (Capacity <= Source.Count + items.Length)
             {
                 // calc remove count
-                var remCount = Math.Min(Source.Count, Source.Count + items.Length - capacity);
+                var remCount = Math.Min(Source.Count, Source.Count + items.Length - Capacity);
                 using (var ys = new ResizableArray<T>(remCount))
                 {
                     for (var i = 0; i < remCount; i++) ys.Add(Source.RemoveFirst());
@@ -151,7 +154,7 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
 
             var index = Source.Count;
             var span = items;
-            if (span.Length > capacity) span = span.Slice(span.Length - capacity);
+            if (span.Length > Capacity) span = span.Slice(span.Length - Capacity);
 
             foreach (var item in span) Source.AddLast(item);
             InvokeCollectionChanged(NotifyCollectionChangedEventArgs<T>.Add(span, index));
@@ -192,10 +195,5 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
         {
             return Source.BinarySearch(item, comparer);
         }
-    }
-
-    public ISynchronizedView<T, TView> CreateView<TView>(Func<T, TView> transform)
-    {
-        return new ObservableRingBuffer<T>.View<TView>(this, transform);
     }
 }

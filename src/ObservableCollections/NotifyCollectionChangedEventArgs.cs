@@ -5,18 +5,18 @@ using System.Runtime.InteropServices;
 namespace ObservableCollections;
 
 /// <summary>
-/// Contract:
+///     Contract:
 ///     IsSingleItem ? (NewItem, OldItem) : (NewItems, OldItems)
 ///     Action.Add
-///         NewItem, NewItems, NewStartingIndex
+///     NewItem, NewItems, NewStartingIndex
 ///     Action.Remove
-///         OldItem, OldItems, OldStartingIndex
+///     OldItem, OldItems, OldStartingIndex
 ///     Action.Replace
-///         NewItem, NewItems, OldItem, OldItems, (NewStartingIndex, OldStartingIndex = samevalue)
+///     NewItem, NewItems, OldItem, OldItems, (NewStartingIndex, OldStartingIndex = samevalue)
 ///     Action.Move
-///         NewStartingIndex, OldStartingIndex
+///     NewStartingIndex, OldStartingIndex
 ///     Action.Reset
-///         -
+///     -
 /// </summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly ref struct NotifyCollectionChangedEventArgs<T>

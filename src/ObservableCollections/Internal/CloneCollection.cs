@@ -2,18 +2,18 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace ObservableCollections.Internal;
 
 /// <summary>
-/// ReadOnly cloned collection.
+///     ReadOnly cloned collection.
 /// </summary>
 internal struct CloneCollection<T> : IDisposable
 {
     private T[]? array;
-    private int length;
+    private readonly int length;
 
     public ReadOnlySpan<T> Span => array.AsSpan(0, length);
 

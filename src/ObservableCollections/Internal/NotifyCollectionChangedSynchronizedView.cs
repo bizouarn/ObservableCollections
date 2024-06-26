@@ -11,9 +11,9 @@ internal class NotifyCollectionChangedSynchronizedView<T, TView> :
     ISynchronizedViewFilter<T, TView>
 {
     private static readonly PropertyChangedEventArgs CountPropertyChangedEventArgs = new("Count");
+    private readonly ISynchronizedViewFilter<T, TView> currentFilter;
 
     private readonly ISynchronizedView<T, TView> parent;
-    private readonly ISynchronizedViewFilter<T, TView> currentFilter;
 
     public NotifyCollectionChangedSynchronizedView(ISynchronizedView<T, TView> parent)
     {
@@ -26,18 +26,6 @@ internal class NotifyCollectionChangedSynchronizedView<T, TView> :
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     public event PropertyChangedEventHandler? PropertyChanged;
-
-    public event Action<NotifyCollectionChangedAction>? CollectionStateChanged
-    {
-        add => parent.CollectionStateChanged += value;
-        remove => parent.CollectionStateChanged -= value;
-    }
-
-    public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged
-    {
-        add => parent.RoutingCollectionChanged += value;
-        remove => parent.RoutingCollectionChanged -= value;
-    }
 
     public void Dispose()
     {
@@ -103,5 +91,17 @@ internal class NotifyCollectionChangedSynchronizedView<T, TView> :
                         args.NewViewIndex, args.OldViewIndex));
                 break;
         }
+    }
+
+    public event Action<NotifyCollectionChangedAction>? CollectionStateChanged
+    {
+        add => parent.CollectionStateChanged += value;
+        remove => parent.CollectionStateChanged -= value;
+    }
+
+    public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged
+    {
+        add => parent.RoutingCollectionChanged += value;
+        remove => parent.RoutingCollectionChanged -= value;
     }
 }

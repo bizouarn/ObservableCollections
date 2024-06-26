@@ -21,7 +21,6 @@ internal static class CollectionExtensions
     }
 
 #if !NET6_0_OR_GREATER
-
     public static bool TryGetNonEnumeratedCount<T>(this IEnumerable<T> source, out int count)
     {
         if (source is ICollection<T> collection)
@@ -44,9 +43,7 @@ internal static class CollectionExtensions
 }
 
 #if !NET5_0_OR_GREATER
-
 internal interface IReadOnlySet<out T> : IReadOnlyCollection<T>
 {
 }
-
 #endif

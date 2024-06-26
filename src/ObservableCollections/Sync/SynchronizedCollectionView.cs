@@ -16,6 +16,17 @@ public abstract class SynchronizedCollectionView<T, TView, TList> : Synchronized
         }
     }
 
+    public override int Count
+    {
+        get
+        {
+            lock (SyncRoot)
+            {
+                return View.Count;
+            }
+        }
+    }
+
     public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter,
         bool invokeAddEventForCurrentElements = false)
     {
@@ -49,17 +60,6 @@ public abstract class SynchronizedCollectionView<T, TView, TList> : Synchronized
             foreach (var item in View)
                 if (filter.IsMatch(item.Item1, item.Item2))
                     yield return item;
-        }
-    }
-
-    public override int Count
-    {
-        get
-        {
-            lock (SyncRoot)
-            {
-                return View.Count;
-            }
         }
     }
 }

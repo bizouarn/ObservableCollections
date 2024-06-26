@@ -1,8 +1,8 @@
-using ObservableCollections.Internal;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ObservableCollections.Internal;
 
 namespace ObservableCollections;
 
@@ -28,9 +28,65 @@ public sealed partial class ObservableHashSet<T> : SynchronizedCollection<HashSe
         Source = new HashSet<T>(collection);
     }
 
+    public bool IsReadOnly => false;
+
     public event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
 
-    public bool IsReadOnly => false;
+    public bool Contains(T item)
+    {
+        lock (SyncRoot)
+        {
+            return Source.Contains(item);
+        }
+    }
+
+    public bool IsProperSubsetOf(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
+        {
+            return Source.IsProperSubsetOf(other);
+        }
+    }
+
+    public bool IsProperSupersetOf(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
+        {
+            return Source.IsProperSupersetOf(other);
+        }
+    }
+
+    public bool IsSubsetOf(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
+        {
+            return Source.IsSubsetOf(other);
+        }
+    }
+
+    public bool IsSupersetOf(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
+        {
+            return Source.IsSupersetOf(other);
+        }
+    }
+
+    public bool Overlaps(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
+        {
+            return Source.Overlaps(other);
+        }
+    }
+
+    public bool SetEquals(IEnumerable<T> other)
+    {
+        lock (SyncRoot)
+        {
+            return Source.SetEquals(other);
+        }
+    }
 
     public bool Add(T item)
     {
@@ -153,60 +209,4 @@ public sealed partial class ObservableHashSet<T> : SynchronizedCollection<HashSe
     }
 
 #endif
-
-    public bool Contains(T item)
-    {
-        lock (SyncRoot)
-        {
-            return Source.Contains(item);
-        }
-    }
-
-    public bool IsProperSubsetOf(IEnumerable<T> other)
-    {
-        lock (SyncRoot)
-        {
-            return Source.IsProperSubsetOf(other);
-        }
-    }
-
-    public bool IsProperSupersetOf(IEnumerable<T> other)
-    {
-        lock (SyncRoot)
-        {
-            return Source.IsProperSupersetOf(other);
-        }
-    }
-
-    public bool IsSubsetOf(IEnumerable<T> other)
-    {
-        lock (SyncRoot)
-        {
-            return Source.IsSubsetOf(other);
-        }
-    }
-
-    public bool IsSupersetOf(IEnumerable<T> other)
-    {
-        lock (SyncRoot)
-        {
-            return Source.IsSupersetOf(other);
-        }
-    }
-
-    public bool Overlaps(IEnumerable<T> other)
-    {
-        lock (SyncRoot)
-        {
-            return Source.Overlaps(other);
-        }
-    }
-
-    public bool SetEquals(IEnumerable<T> other)
-    {
-        lock (SyncRoot)
-        {
-            return Source.SetEquals(other);
-        }
-    }
 }

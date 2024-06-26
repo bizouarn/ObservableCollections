@@ -29,8 +29,6 @@ public abstract class SynchronizedList<TCol, TSub>
 
     public bool IsReadOnly => false;
 
-    public event NotifyCollectionChangedEventHandler<TSub>? CollectionChanged;
-
     public virtual void Add(TSub item)
     {
         lock (SyncRoot)
@@ -78,10 +76,8 @@ public abstract class SynchronizedList<TCol, TSub>
                 CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<TSub>.Remove(item, index));
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
     }
 
@@ -111,6 +107,8 @@ public abstract class SynchronizedList<TCol, TSub>
             CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<TSub>.Remove(item, index));
         }
     }
+
+    public event NotifyCollectionChangedEventHandler<TSub>? CollectionChanged;
 
     protected void InvokeCollectionChanged(NotifyCollectionChangedEventArgs<TSub> collectionChanged)
     {

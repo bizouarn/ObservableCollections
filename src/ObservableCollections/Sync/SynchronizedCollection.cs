@@ -13,10 +13,7 @@ public abstract class SynchronizedCollection<TCol, TSub> : Synchronized, IReadOn
     /// <returns>An enumerator that can be used to iterate through the collection.</returns>
     public IEnumerator<TSub> GetEnumerator()
     {
-        foreach (var item in Source)
-        {
-            yield return item;
-        }
+        foreach (var item in Source) yield return item;
     }
 
     /// <summary>Returns an enumerator that iterates through a collection.</summary>

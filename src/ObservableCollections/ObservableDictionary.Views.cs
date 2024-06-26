@@ -16,8 +16,8 @@ public sealed partial class ObservableDictionary<TKey, TValue>
 
     private class View<TView> : SynchronizedViewBase<KeyValuePair<TKey, TValue>, TView>
     {
-        private readonly Func<KeyValuePair<TKey, TValue>, TView> selector;
         private readonly Dictionary<TKey, (TValue, TView)> dict;
+        private readonly Func<KeyValuePair<TKey, TValue>, TView> selector;
 
         public View(ObservableDictionary<TKey, TValue> source, Func<KeyValuePair<TKey, TValue>, TView> selector)
             : base(source)

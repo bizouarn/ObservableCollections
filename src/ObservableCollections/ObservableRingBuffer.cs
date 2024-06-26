@@ -1,6 +1,6 @@
-﻿using ObservableCollections.Internal;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using ObservableCollections.Internal;
 
 namespace ObservableCollections;
 

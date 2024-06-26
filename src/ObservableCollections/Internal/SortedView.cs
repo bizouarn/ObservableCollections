@@ -8,9 +8,9 @@ namespace ObservableCollections.Internal;
 internal class SortedView<T, TKey, TView> : SynchronizedViewBase<T, TView>
     where TKey : notnull
 {
-    private readonly Func<T, TView> transform;
     private readonly Func<T, TKey> identitySelector;
     private readonly SortedList<(T Value, TKey Key), (T Value, TView View)> list;
+    private readonly Func<T, TView> transform;
 
     public SortedView(IObservableCollection<T> source, Func<T, TKey> identitySelector, Func<T, TView> transform,
         IComparer<T> comparer)
@@ -172,8 +172,6 @@ internal class SortedView<T, TKey, TView> : SynchronizedViewBase<T, TView>
                 case NotifyCollectionChangedAction.Reset:
                     list.Clear();
                     filter.InvokeOnReset();
-                    break;
-                default:
                     break;
             }
 

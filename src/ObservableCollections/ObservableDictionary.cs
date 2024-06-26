@@ -24,8 +24,6 @@ public sealed partial class ObservableDictionary<TKey, TValue> :
 #endif
     }
 
-    public event NotifyCollectionChangedEventHandler<KeyValuePair<TKey, TValue>>? CollectionChanged;
-
     public TValue this[TKey key]
     {
         get
@@ -80,28 +78,6 @@ public sealed partial class ObservableDictionary<TKey, TValue> :
 
     public bool IsReadOnly => false;
 
-    IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys
-    {
-        get
-        {
-            lock (SyncRoot)
-            {
-                return Source.Keys;
-            }
-        }
-    }
-
-    IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values
-    {
-        get
-        {
-            lock (SyncRoot)
-            {
-                return Source.Values;
-            }
-        }
-    }
-
     public void Add(TKey key, TValue value)
     {
         lock (SyncRoot)
@@ -117,24 +93,6 @@ public sealed partial class ObservableDictionary<TKey, TValue> :
     {
         Add(item.Key, item.Value);
     }
-
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-    public bool TryAdd(TKey key, TValue value)
-    {
-        lock (SyncRoot)
-        {
-            if (Source.TryAdd(key, value))
-            {
-                CollectionChanged?.Invoke(
-                    NotifyCollectionChangedEventArgs<KeyValuePair<TKey, TValue>>.Add(
-                        new KeyValuePair<TKey, TValue>(key, value), -1));
-                return true;
-            }
-
-            return false;
-        }
-    }
-#endif
 
     public void Clear()
     {
@@ -212,4 +170,46 @@ public sealed partial class ObservableDictionary<TKey, TValue> :
             return Source.TryGetValue(key, out value);
         }
     }
+
+    public event NotifyCollectionChangedEventHandler<KeyValuePair<TKey, TValue>>? CollectionChanged;
+
+    IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys
+    {
+        get
+        {
+            lock (SyncRoot)
+            {
+                return Source.Keys;
+            }
+        }
+    }
+
+    IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values
+    {
+        get
+        {
+            lock (SyncRoot)
+            {
+                return Source.Values;
+            }
+        }
+    }
+
+#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+    public bool TryAdd(TKey key, TValue value)
+    {
+        lock (SyncRoot)
+        {
+            if (Source.TryAdd(key, value))
+            {
+                CollectionChanged?.Invoke(
+                    NotifyCollectionChangedEventArgs<KeyValuePair<TKey, TValue>>.Add(
+                        new KeyValuePair<TKey, TValue>(key, value), -1));
+                return true;
+            }
+
+            return false;
+        }
+    }
+#endif
 }

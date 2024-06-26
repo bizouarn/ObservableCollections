@@ -10,14 +10,13 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
 {
     private T[] buffer;
     private int head;
-    private int count;
     private int mask;
 
     public RingBuffer()
     {
         buffer = new T[8];
         head = 0;
-        count = 0;
+        Count = 0;
         mask = buffer.Length - 1;
     }
 
@@ -25,7 +24,7 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
     {
         buffer = new T[CalculateCapacity(capacity)];
         head = 0;
-        count = 0;
+        Count = 0;
         mask = buffer.Length - 1;
     }
 
@@ -43,22 +42,8 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
 
         buffer = array;
         head = 0;
-        this.count = i;
+        this.Count = i;
         mask = buffer.Length - 1;
-    }
-
-    private static int CalculateCapacity(int size)
-    {
-        size--;
-        size |= size >> 1;
-        size |= size >> 2;
-        size |= size >> 4;
-        size |= size >> 8;
-        size |= size >> 16;
-        size += 1;
-
-        if (size < 8) size = 8;
-        return size;
     }
 
     public T this[int index]
@@ -75,64 +60,9 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
         }
     }
 
-    public int Count => count;
+    public int Count { get; private set; }
 
     public bool IsReadOnly => false;
-
-    public void AddLast(T item)
-    {
-        if (count == buffer.Length) EnsureCapacity();
-
-        var index = (head + count) & mask;
-        buffer[index] = item;
-        count++;
-    }
-
-    public void AddFirst(T item)
-    {
-        if (count == buffer.Length) EnsureCapacity();
-
-        head = (head - 1) & mask;
-        buffer[head] = item;
-        count++;
-    }
-
-    public T RemoveLast()
-    {
-        if (count == 0) ThrowForEmpty();
-
-        var index = (head + count - 1) & mask;
-        var v = buffer[index];
-        buffer[index] = default!;
-        count--;
-        return v;
-    }
-
-    public T RemoveFirst()
-    {
-        if (count == 0) ThrowForEmpty();
-
-        var index = head & mask;
-        var v = buffer[index];
-        buffer[index] = default!;
-        head += 1;
-        count--;
-        return v;
-    }
-
-    private void EnsureCapacity()
-    {
-        var newBuffer = new T[buffer.Length * 2];
-
-        var i = head & mask;
-        buffer.AsSpan(i).CopyTo(newBuffer);
-
-        if (i != 0) buffer.AsSpan(0, i).CopyTo(newBuffer.AsSpan(buffer.Length - i));
-
-        head = 0;
-        buffer = newBuffer;
-        mask = newBuffer.Length - 1;
-    }
 
     void ICollection<T>.Add(T item)
     {
@@ -143,36 +73,15 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
     {
         Array.Clear(buffer, 0, buffer.Length);
         head = 0;
-        count = 0;
-    }
-
-    public RingBufferSpan<T> GetSpan()
-    {
-        if (count == 0) return new RingBufferSpan<T>(Array.Empty<T>(), Array.Empty<T>(), 0);
-
-        var start = head & mask;
-        var end = (head + count) & mask;
-
-        if (end > start)
-        {
-            var first = buffer.AsSpan(start, count);
-            var second = Array.Empty<T>().AsSpan();
-            return new RingBufferSpan<T>(first, second, count);
-        }
-        else
-        {
-            var first = buffer.AsSpan(start, buffer.Length - start);
-            var second = buffer.AsSpan(0, end);
-            return new RingBufferSpan<T>(first, second, count);
-        }
+        Count = 0;
     }
 
     public IEnumerator<T> GetEnumerator()
     {
-        if (count == 0) yield break;
+        if (Count == 0) yield break;
 
         var start = head & mask;
-        var end = (head + count) & mask;
+        var end = (head + Count) & mask;
 
         if (end > start)
         {
@@ -185,28 +94,6 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
             for (var i = start; i < buffer.Length; i++) yield return buffer[i];
             // 0...end
             for (var i = 0; i < end; i++) yield return buffer[i];
-        }
-    }
-
-    public IEnumerable<T> Reverse()
-    {
-        if (count == 0) yield break;
-
-        var start = head & mask;
-        var end = (head + count) & mask;
-
-        if (end > start)
-        {
-            // end...start
-            for (var i = end - 1; i >= start; i--) yield return buffer[i];
-        }
-        else
-        {
-            // end...0
-            for (var i = end - 1; i >= 0; i--) yield return buffer[i];
-
-            // ...start
-            for (var i = buffer.Length - 1; i >= start; i--) yield return buffer[i];
         }
     }
 
@@ -235,39 +122,6 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
         return -1;
     }
 
-    public T[] ToArray()
-    {
-        var result = new T[count];
-        var i = 0;
-        foreach (var item in GetSpan()) result[i++] = item;
-        return result;
-    }
-
-    public int BinarySearch(T item)
-    {
-        return BinarySearch(item, Comparer<T>.Default);
-    }
-
-    public int BinarySearch(T item, IComparer<T> comparer)
-    {
-        var lo = 0;
-        var hi = count - 1;
-
-        while (lo <= hi)
-        {
-            var mid = (int) (((uint) hi + (uint) lo) >> 1);
-            var found = comparer.Compare(this[mid], item);
-
-            if (found == 0) return mid;
-            if (found < 0)
-                lo = mid + 1;
-            else
-                hi = mid - 1;
-        }
-
-        return ~lo;
-    }
-
     void IList<T>.Insert(int index, T item)
     {
         throw new NotSupportedException();
@@ -286,6 +140,151 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    private static int CalculateCapacity(int size)
+    {
+        size--;
+        size |= size >> 1;
+        size |= size >> 2;
+        size |= size >> 4;
+        size |= size >> 8;
+        size |= size >> 16;
+        size += 1;
+
+        if (size < 8) size = 8;
+        return size;
+    }
+
+    public void AddLast(T item)
+    {
+        if (Count == buffer.Length) EnsureCapacity();
+
+        var index = (head + Count) & mask;
+        buffer[index] = item;
+        Count++;
+    }
+
+    public void AddFirst(T item)
+    {
+        if (Count == buffer.Length) EnsureCapacity();
+
+        head = (head - 1) & mask;
+        buffer[head] = item;
+        Count++;
+    }
+
+    public T RemoveLast()
+    {
+        if (Count == 0) ThrowForEmpty();
+
+        var index = (head + Count - 1) & mask;
+        var v = buffer[index];
+        buffer[index] = default!;
+        Count--;
+        return v;
+    }
+
+    public T RemoveFirst()
+    {
+        if (Count == 0) ThrowForEmpty();
+
+        var index = head & mask;
+        var v = buffer[index];
+        buffer[index] = default!;
+        head += 1;
+        Count--;
+        return v;
+    }
+
+    private void EnsureCapacity()
+    {
+        var newBuffer = new T[buffer.Length * 2];
+
+        var i = head & mask;
+        buffer.AsSpan(i).CopyTo(newBuffer);
+
+        if (i != 0) buffer.AsSpan(0, i).CopyTo(newBuffer.AsSpan(buffer.Length - i));
+
+        head = 0;
+        buffer = newBuffer;
+        mask = newBuffer.Length - 1;
+    }
+
+    public RingBufferSpan<T> GetSpan()
+    {
+        if (Count == 0) return new RingBufferSpan<T>(Array.Empty<T>(), Array.Empty<T>(), 0);
+
+        var start = head & mask;
+        var end = (head + Count) & mask;
+
+        if (end > start)
+        {
+            var first = buffer.AsSpan(start, Count);
+            var second = Array.Empty<T>().AsSpan();
+            return new RingBufferSpan<T>(first, second, Count);
+        }
+        else
+        {
+            var first = buffer.AsSpan(start, buffer.Length - start);
+            var second = buffer.AsSpan(0, end);
+            return new RingBufferSpan<T>(first, second, Count);
+        }
+    }
+
+    public IEnumerable<T> Reverse()
+    {
+        if (Count == 0) yield break;
+
+        var start = head & mask;
+        var end = (head + Count) & mask;
+
+        if (end > start)
+        {
+            // end...start
+            for (var i = end - 1; i >= start; i--) yield return buffer[i];
+        }
+        else
+        {
+            // end...0
+            for (var i = end - 1; i >= 0; i--) yield return buffer[i];
+
+            // ...start
+            for (var i = buffer.Length - 1; i >= start; i--) yield return buffer[i];
+        }
+    }
+
+    public T[] ToArray()
+    {
+        var result = new T[Count];
+        var i = 0;
+        foreach (var item in GetSpan()) result[i++] = item;
+        return result;
+    }
+
+    public int BinarySearch(T item)
+    {
+        return BinarySearch(item, Comparer<T>.Default);
+    }
+
+    public int BinarySearch(T item, IComparer<T> comparer)
+    {
+        var lo = 0;
+        var hi = Count - 1;
+
+        while (lo <= hi)
+        {
+            var mid = (int) (((uint) hi + (uint) lo) >> 1);
+            var found = comparer.Compare(this[mid], item);
+
+            if (found == 0) return mid;
+            if (found < 0)
+                lo = mid + 1;
+            else
+                hi = mid - 1;
+        }
+
+        return ~lo;
     }
 
     [DoesNotReturn]
@@ -332,8 +331,7 @@ public readonly ref struct RingBufferSpan<T>
             {
                 if (firstEnumerator.MoveNext())
                     return true;
-                else
-                    useFirst = false;
+                useFirst = false;
             }
 
             return secondEnumerator.MoveNext();

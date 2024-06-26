@@ -1,8 +1,8 @@
 ﻿#nullable disable
 
-using ObservableCollections.Internal;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using ObservableCollections.Internal;
 
 namespace ObservableCollections;
 
