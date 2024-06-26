@@ -29,7 +29,8 @@ public class FreezedCollection<TCol, TSub> : IFreezedCollection<TSub>, IEnumerab
 
     public IEnumerator<TSub> GetEnumerator()
     {
-        return Collection.GetEnumerator();
+        foreach (var item in Collection)
+            yield return item;
     }
 
     IEnumerator IEnumerable.GetEnumerator()
