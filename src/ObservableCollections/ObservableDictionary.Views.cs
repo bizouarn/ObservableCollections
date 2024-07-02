@@ -16,16 +16,16 @@ public sealed partial class ObservableDictionary<TKey, TValue>
 
     private class View<TView> : SynchronizedViewBase<KeyValuePair<TKey, TValue>, TView>
     {
-        private readonly Dictionary<TKey, (TValue, TView)> dict;
-        private readonly Func<KeyValuePair<TKey, TValue>, TView> selector;
+        private readonly Dictionary<TKey, (TValue, TView)> _dict;
+        private readonly Func<KeyValuePair<TKey, TValue>, TView> _selector;
 
         public View(ObservableDictionary<TKey, TValue> source, Func<KeyValuePair<TKey, TValue>, TView> selector)
             : base(source)
         {
-            this.selector = selector;
+            this._selector = selector;
             lock (source.SyncRoot)
             {
-                dict = source.Source.ToDictionary(x => x.Key, x => (x.Value, selector(x)));
+                _dict = source.Source.ToDictionary(x => x.Key, x => (x.Value, selector(x)));
             }
         }
 
@@ -35,7 +35,7 @@ public sealed partial class ObservableDictionary<TKey, TValue>
             {
                 lock (SyncRoot)
                 {
-                    return dict.Count;
+                    return _dict.Count;
                 }
             }
         }
@@ -45,8 +45,8 @@ public sealed partial class ObservableDictionary<TKey, TValue>
         {
             lock (SyncRoot)
             {
-                this.filter = filter;
-                foreach (var v in dict)
+                this.Filter = filter;
+                foreach (var v in _dict)
                 {
                     var value = new KeyValuePair<TKey, TValue>(v.Key, v.Value.Item1);
                     var view = v.Value.Item2;
@@ -62,9 +62,9 @@ public sealed partial class ObservableDictionary<TKey, TValue>
         {
             lock (SyncRoot)
             {
-                filter = SynchronizedViewFilter<KeyValuePair<TKey, TValue>, TView>.Null;
+                Filter = SynchronizedViewFilter<KeyValuePair<TKey, TValue>, TView>._null;
                 if (resetAction != null)
-                    foreach (var v in dict)
+                    foreach (var v in _dict)
                         resetAction(new KeyValuePair<TKey, TValue>(v.Key, v.Value.Item1), v.Value.Item2);
             }
         }
@@ -73,10 +73,10 @@ public sealed partial class ObservableDictionary<TKey, TValue>
         {
             lock (SyncRoot)
             {
-                foreach (var item in dict)
+                foreach (var item in _dict)
                 {
                     var v = (new KeyValuePair<TKey, TValue>(item.Key, item.Value.Item1), item.Value.Item2);
-                    if (filter.IsMatch(v.Item1, v.Item2)) yield return v;
+                    if (Filter.IsMatch(v.Item1, v.Item2)) yield return v;
                 }
             }
         }
@@ -91,29 +91,29 @@ public sealed partial class ObservableDictionary<TKey, TValue>
                 {
                     case NotifyCollectionChangedAction.Add:
                     {
-                        var v = selector(e.NewItem);
-                        dict.Add(e.NewItem.Key, (e.NewItem.Value, v));
-                        filter.InvokeOnAdd(e.NewItem, v, -1);
+                        var v = _selector(e.NewItem);
+                        _dict.Add(e.NewItem.Key, (e.NewItem.Value, v));
+                        Filter.InvokeOnAdd(e.NewItem, v, -1);
                     }
                         break;
                     case NotifyCollectionChangedAction.Remove:
                     {
-                        if (dict.Remove(e.OldItem.Key, out var v)) filter.InvokeOnRemove(e.OldItem, v.Item2, -1);
+                        if (_dict.Remove(e.OldItem.Key, out var v)) Filter.InvokeOnRemove(e.OldItem, v.Item2, -1);
                     }
                         break;
                     case NotifyCollectionChangedAction.Replace:
                     {
-                        var v = selector(e.NewItem);
-                        dict.Remove(e.OldItem.Key, out var ov);
-                        dict[e.NewItem.Key] = (e.NewItem.Value, v);
+                        var v = _selector(e.NewItem);
+                        _dict.Remove(e.OldItem.Key, out var ov);
+                        _dict[e.NewItem.Key] = (e.NewItem.Value, v);
 
-                        filter.InvokeOnReplace(e.NewItem, v, e.OldItem, ov.Item2, -1);
+                        Filter.InvokeOnReplace(e.NewItem, v, e.OldItem, ov.Item2, -1);
                     }
                         break;
                     case NotifyCollectionChangedAction.Reset:
                     {
-                        dict.Clear();
-                        filter.InvokeOnReset();
+                        _dict.Clear();
+                        Filter.InvokeOnReset();
                     }
                         break;
                     case NotifyCollectionChangedAction.Move: // ObservableDictionary have no Move operation.

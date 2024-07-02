@@ -15,12 +15,12 @@ public sealed partial class ObservableQueue<T> : IObservableCollection<T>
 
     private class View<TView> : SynchronizedCollectionView<T, TView, Queue<(T, TView)>>
     {
-        private readonly Func<T, TView> selector;
+        private readonly Func<T, TView> _selector;
 
         public View(ObservableQueue<T> source, Func<T, TView> selector)
             : base(source, new Queue<(T, TView)>(source.Source.Select(x => (x, selector(x)))))
         {
-            this.selector = selector;
+            this._selector = selector;
         }
 
         protected override void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
@@ -33,18 +33,18 @@ public sealed partial class ObservableQueue<T> : IObservableCollection<T>
                         // Add(Enqueue, EnqueueRange)
                         if (e.IsSingleItem)
                         {
-                            var v = (e.NewItem, selector(e.NewItem));
+                            var v = (e.NewItem, _selector(e.NewItem));
                             View.Enqueue(v);
-                            filter.InvokeOnAdd(v, e.NewStartingIndex);
+                            Filter.InvokeOnAdd(v, e.NewStartingIndex);
                         }
                         else
                         {
                             var i = e.NewStartingIndex;
                             foreach (var item in e.NewItems)
                             {
-                                var v = (item, selector(item));
+                                var v = (item, _selector(item));
                                 View.Enqueue(v);
-                                filter.InvokeOnAdd(v, i++);
+                                Filter.InvokeOnAdd(v, i++);
                             }
                         }
 
@@ -54,7 +54,7 @@ public sealed partial class ObservableQueue<T> : IObservableCollection<T>
                         if (e.IsSingleItem)
                         {
                             var v = View.Dequeue();
-                            filter.InvokeOnRemove(v.Item1, v.Item2, 0);
+                            Filter.InvokeOnRemove(v.Item1, v.Item2, 0);
                         }
                         else
                         {
@@ -62,14 +62,14 @@ public sealed partial class ObservableQueue<T> : IObservableCollection<T>
                             for (var i = 0; i < len; i++)
                             {
                                 var v = View.Dequeue();
-                                filter.InvokeOnRemove(v.Item1, v.Item2, 0);
+                                Filter.InvokeOnRemove(v.Item1, v.Item2, 0);
                             }
                         }
 
                         break;
                     case NotifyCollectionChangedAction.Reset:
                         View.Clear();
-                        filter.InvokeOnReset();
+                        Filter.InvokeOnReset();
                         break;
                     case NotifyCollectionChangedAction.Replace:
                     case NotifyCollectionChangedAction.Move:

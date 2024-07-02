@@ -15,12 +15,12 @@ public sealed partial class ObservableList<T> : IObservableCollection<T>
 
     private sealed class View<TView> : SynchronizedCollectionView<T, TView, List<(T, TView)>>
     {
-        private readonly Func<T, TView> selector;
+        private readonly Func<T, TView> _selector;
 
         public View(ObservableList<T> source, Func<T, TView> selector)
             : base(source, source.Source.Select(x => (x, selector(x))).ToList())
         {
-            this.selector = selector;
+            this._selector = selector;
         }
 
         protected override void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
@@ -35,18 +35,18 @@ public sealed partial class ObservableList<T> : IObservableCollection<T>
                         {
                             if (e.IsSingleItem)
                             {
-                                var v = (e.NewItem, selector(e.NewItem));
+                                var v = (e.NewItem, _selector(e.NewItem));
                                 View.Add(v);
-                                filter.InvokeOnAdd(v, e.NewStartingIndex);
+                                Filter.InvokeOnAdd(v, e.NewStartingIndex);
                             }
                             else
                             {
                                 var i = e.NewStartingIndex;
                                 foreach (var item in e.NewItems)
                                 {
-                                    var v = (item, selector(item));
+                                    var v = (item, _selector(item));
                                     View.Add(v);
-                                    filter.InvokeOnAdd(v, i++);
+                                    Filter.InvokeOnAdd(v, i++);
                                 }
                             }
                         }
@@ -55,9 +55,9 @@ public sealed partial class ObservableList<T> : IObservableCollection<T>
                         {
                             if (e.IsSingleItem)
                             {
-                                var v = (e.NewItem, selector(e.NewItem));
+                                var v = (e.NewItem, _selector(e.NewItem));
                                 View.Insert(e.NewStartingIndex, v);
-                                filter.InvokeOnAdd(v, e.NewStartingIndex);
+                                Filter.InvokeOnAdd(v, e.NewStartingIndex);
                             }
                             else
                             {
@@ -66,9 +66,9 @@ public sealed partial class ObservableList<T> : IObservableCollection<T>
                                 var span = e.NewItems;
                                 for (var i = 0; i < span.Length; i++)
                                 {
-                                    var v = (span[i], selector(span[i]));
+                                    var v = (span[i], _selector(span[i]));
                                     newArray[i] = v;
-                                    filter.InvokeOnAdd(v, e.NewStartingIndex + i);
+                                    Filter.InvokeOnAdd(v, e.NewStartingIndex + i);
                                 }
 
                                 View.InsertRange(e.NewStartingIndex, newArray);
@@ -81,7 +81,7 @@ public sealed partial class ObservableList<T> : IObservableCollection<T>
                         {
                             var v = View[e.OldStartingIndex];
                             View.RemoveAt(e.OldStartingIndex);
-                            filter.InvokeOnRemove(v, e.OldStartingIndex);
+                            Filter.InvokeOnRemove(v, e.OldStartingIndex);
                         }
                         else
                         {
@@ -89,7 +89,7 @@ public sealed partial class ObservableList<T> : IObservableCollection<T>
                             for (var i = e.OldStartingIndex; i < len; i++)
                             {
                                 var v = View[i];
-                                filter.InvokeOnRemove(v, e.OldStartingIndex + i);
+                                Filter.InvokeOnRemove(v, e.OldStartingIndex + i);
                             }
 
                             View.RemoveRange(e.OldStartingIndex, e.OldItems.Length);
@@ -99,10 +99,10 @@ public sealed partial class ObservableList<T> : IObservableCollection<T>
                     case NotifyCollectionChangedAction.Replace:
                         // ObservableList does not support replace range
                     {
-                        var v = (e.NewItem, selector(e.NewItem));
+                        var v = (e.NewItem, _selector(e.NewItem));
                         var ov = (e.OldItem, View[e.OldStartingIndex].Item2);
                         View[e.NewStartingIndex] = v;
-                        filter.InvokeOnReplace(v, ov, e.NewStartingIndex);
+                        Filter.InvokeOnReplace(v, ov, e.NewStartingIndex);
                         break;
                     }
                     case NotifyCollectionChangedAction.Move:
@@ -111,12 +111,12 @@ public sealed partial class ObservableList<T> : IObservableCollection<T>
                         View.RemoveAt(e.OldStartingIndex);
                         View.Insert(e.NewStartingIndex, removeItem);
 
-                        filter.InvokeOnMove(removeItem, e.NewStartingIndex, e.OldStartingIndex);
+                        Filter.InvokeOnMove(removeItem, e.NewStartingIndex, e.OldStartingIndex);
                     }
                         break;
                     case NotifyCollectionChangedAction.Reset:
                         View.Clear();
-                        filter.InvokeOnReset();
+                        Filter.InvokeOnReset();
                         break;
                 }
 

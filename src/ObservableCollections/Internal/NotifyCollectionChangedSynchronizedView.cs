@@ -10,31 +10,31 @@ internal class NotifyCollectionChangedSynchronizedView<T, TView> :
     INotifyCollectionChangedSynchronizedView<TView>,
     ISynchronizedViewFilter<T, TView>
 {
-    private static readonly PropertyChangedEventArgs CountPropertyChangedEventArgs = new("Count");
-    private readonly ISynchronizedViewFilter<T, TView> currentFilter;
+    private static readonly PropertyChangedEventArgs _countPropertyChangedEventArgs = new("Count");
+    private readonly ISynchronizedViewFilter<T, TView> _currentFilter;
 
-    private readonly ISynchronizedView<T, TView> parent;
+    private readonly ISynchronizedView<T, TView> _parent;
 
     public NotifyCollectionChangedSynchronizedView(ISynchronizedView<T, TView> parent)
     {
-        this.parent = parent;
-        currentFilter = parent.CurrentFilter;
+        this._parent = parent;
+        _currentFilter = parent.CurrentFilter;
         parent.AttachFilter(this);
     }
 
-    public int Count => parent.Count;
+    public int Count => _parent.Count;
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public void Dispose()
     {
-        parent.Dispose();
+        _parent.Dispose();
     }
 
     public IEnumerator<TView> GetEnumerator()
     {
-        foreach (var (_, view) in parent) yield return view;
+        foreach (var (_, view) in _parent) yield return view;
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -44,22 +44,22 @@ internal class NotifyCollectionChangedSynchronizedView<T, TView> :
 
     public bool IsMatch(T value, TView view)
     {
-        return currentFilter.IsMatch(value, view);
+        return _currentFilter.IsMatch(value, view);
     }
 
     public void WhenTrue(T value, TView view)
     {
-        currentFilter.WhenTrue(value, view);
+        _currentFilter.WhenTrue(value, view);
     }
 
     public void WhenFalse(T value, TView view)
     {
-        currentFilter.WhenFalse(value, view);
+        _currentFilter.WhenFalse(value, view);
     }
 
     public void OnCollectionChanged(in SynchronizedViewChangedEventArgs<T, TView> args)
     {
-        currentFilter.OnCollectionChanged(args);
+        _currentFilter.OnCollectionChanged(args);
 
         switch (args.Action)
         {
@@ -67,18 +67,18 @@ internal class NotifyCollectionChangedSynchronizedView<T, TView> :
                 CollectionChanged?.Invoke(this,
                     new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, args.NewView,
                         args.NewViewIndex));
-                PropertyChanged?.Invoke(this, CountPropertyChangedEventArgs);
+                PropertyChanged?.Invoke(this, _countPropertyChangedEventArgs);
                 break;
             case NotifyCollectionChangedAction.Remove:
                 CollectionChanged?.Invoke(this,
                     new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, args.OldView,
                         args.OldViewIndex));
-                PropertyChanged?.Invoke(this, CountPropertyChangedEventArgs);
+                PropertyChanged?.Invoke(this, _countPropertyChangedEventArgs);
                 break;
             case NotifyCollectionChangedAction.Reset:
                 CollectionChanged?.Invoke(this,
                     new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-                PropertyChanged?.Invoke(this, CountPropertyChangedEventArgs);
+                PropertyChanged?.Invoke(this, _countPropertyChangedEventArgs);
                 break;
             case NotifyCollectionChangedAction.Replace:
                 CollectionChanged?.Invoke(this,
@@ -95,13 +95,13 @@ internal class NotifyCollectionChangedSynchronizedView<T, TView> :
 
     public event Action<NotifyCollectionChangedAction>? CollectionStateChanged
     {
-        add => parent.CollectionStateChanged += value;
-        remove => parent.CollectionStateChanged -= value;
+        add => _parent.CollectionStateChanged += value;
+        remove => _parent.CollectionStateChanged -= value;
     }
 
     public event NotifyCollectionChangedEventHandler<T>? RoutingCollectionChanged
     {
-        add => parent.RoutingCollectionChanged += value;
-        remove => parent.RoutingCollectionChanged -= value;
+        add => _parent.RoutingCollectionChanged += value;
+        remove => _parent.RoutingCollectionChanged -= value;
     }
 }

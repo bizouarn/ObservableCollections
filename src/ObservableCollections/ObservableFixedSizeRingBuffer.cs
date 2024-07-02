@@ -8,13 +8,13 @@ public sealed class ObservableFixedSizeRingBuffer<T> : SynchronizedList<RingBuff
 {
     public ObservableFixedSizeRingBuffer(int capacity)
     {
-        this.Capacity = capacity;
+        Capacity = capacity;
         Source = new RingBuffer<T>(capacity);
     }
 
     public ObservableFixedSizeRingBuffer(int capacity, IEnumerable<T> collection)
     {
-        this.Capacity = capacity;
+        Capacity = capacity;
         Source = new RingBuffer<T>(capacity);
         foreach (var item in collection)
         {

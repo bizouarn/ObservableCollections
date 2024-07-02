@@ -15,15 +15,15 @@ public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
 
     private sealed class View<TView> : SynchronizedViewBase<T, TView>
     {
-        private readonly Dictionary<T, (T, TView)> dict;
-        private readonly Func<T, TView> selector;
+        private readonly Dictionary<T, (T, TView)> _dict;
+        private readonly Func<T, TView> _selector;
 
         public View(ObservableHashSet<T> source, Func<T, TView> selector) : base(source)
         {
-            this.selector = selector;
+            this._selector = selector;
             lock (source.SyncRoot)
             {
-                dict = source.Source.ToDictionary(x => x, x => (x, selector(x)));
+                _dict = source.Source.ToDictionary(x => x, x => (x, selector(x)));
             }
         }
 
@@ -33,7 +33,7 @@ public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
             {
                 lock (SyncRoot)
                 {
-                    return dict.Count;
+                    return _dict.Count;
                 }
             }
         }
@@ -43,8 +43,8 @@ public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
         {
             lock (SyncRoot)
             {
-                this.filter = filter;
-                foreach (var (_, (value, view)) in dict)
+                this.Filter = filter;
+                foreach (var (_, (value, view)) in _dict)
                     if (invokeAddEventForCurrentElements)
                         filter.InvokeOnAdd((value, view), -1);
                     else
@@ -56,9 +56,9 @@ public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
         {
             lock (SyncRoot)
             {
-                filter = SynchronizedViewFilter<T, TView>.Null;
+                Filter = SynchronizedViewFilter<T, TView>._null;
                 if (resetAction != null)
-                    foreach (var (_, (value, view)) in dict)
+                    foreach (var (_, (value, view)) in _dict)
                         resetAction(value, view);
             }
         }
@@ -67,8 +67,8 @@ public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
         {
             lock (SyncRoot)
             {
-                foreach (var item in dict)
-                    if (filter.IsMatch(item.Value.Item1, item.Value.Item2))
+                foreach (var item in _dict)
+                    if (Filter.IsMatch(item.Value.Item1, item.Value.Item2))
                         yield return item.Value;
             }
         }
@@ -82,18 +82,18 @@ public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
                     case NotifyCollectionChangedAction.Add:
                         if (e.IsSingleItem)
                         {
-                            var v = (e.NewItem, selector(e.NewItem));
-                            dict.Add(e.NewItem, v);
-                            filter.InvokeOnAdd(v, -1);
+                            var v = (e.NewItem, _selector(e.NewItem));
+                            _dict.Add(e.NewItem, v);
+                            Filter.InvokeOnAdd(v, -1);
                         }
                         else
                         {
                             var i = e.NewStartingIndex;
                             foreach (var item in e.NewItems)
                             {
-                                var v = (item, selector(item));
-                                dict.Add(item, v);
-                                filter.InvokeOnAdd(v, i++);
+                                var v = (item, _selector(item));
+                                _dict.Add(item, v);
+                                Filter.InvokeOnAdd(v, i++);
                             }
                         }
 
@@ -101,19 +101,19 @@ public sealed partial class ObservableHashSet<T> : IObservableCollection<T>
                     case NotifyCollectionChangedAction.Remove:
                         if (e.IsSingleItem)
                         {
-                            if (dict.Remove(e.OldItem, out var value)) filter.InvokeOnRemove(value, -1);
+                            if (_dict.Remove(e.OldItem, out var value)) Filter.InvokeOnRemove(value, -1);
                         }
                         else
                         {
                             foreach (var item in e.OldItems)
-                                if (dict.Remove(item, out var value))
-                                    filter.InvokeOnRemove(value, -1);
+                                if (_dict.Remove(item, out var value))
+                                    Filter.InvokeOnRemove(value, -1);
                         }
 
                         break;
                     case NotifyCollectionChangedAction.Reset:
-                        dict.Clear();
-                        filter.InvokeOnReset();
+                        _dict.Clear();
+                        Filter.InvokeOnReset();
                         break;
                     case NotifyCollectionChangedAction.Replace:
                     case NotifyCollectionChangedAction.Move:

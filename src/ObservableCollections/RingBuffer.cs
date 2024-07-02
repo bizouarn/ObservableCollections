@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -8,24 +8,24 @@ namespace ObservableCollections;
 
 public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
 {
-    private T[] buffer;
-    private int head;
-    private int mask;
+    private T[] _buffer;
+    private int _head;
+    private int _mask;
 
     public RingBuffer()
     {
-        buffer = new T[8];
-        head = 0;
+        _buffer = new T[8];
+        _head = 0;
         Count = 0;
-        mask = buffer.Length - 1;
+        _mask = _buffer.Length - 1;
     }
 
     public RingBuffer(int capacity)
     {
-        buffer = new T[CalculateCapacity(capacity)];
-        head = 0;
+        _buffer = new T[CalculateCapacity(capacity)];
+        _head = 0;
         Count = 0;
-        mask = buffer.Length - 1;
+        _mask = _buffer.Length - 1;
     }
 
     public RingBuffer(IEnumerable<T> collection)
@@ -40,23 +40,23 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
             array[i++] = item;
         }
 
-        buffer = array;
-        head = 0;
-        this.Count = i;
-        mask = buffer.Length - 1;
+        _buffer = array;
+        _head = 0;
+        Count = i;
+        _mask = _buffer.Length - 1;
     }
 
     public T this[int index]
     {
         get
         {
-            var i = (head + index) & mask;
-            return buffer[i];
+            var i = (_head + index) & _mask;
+            return _buffer[i];
         }
         set
         {
-            var i = (head + index) & mask;
-            buffer[i] = value;
+            var i = (_head + index) & _mask;
+            _buffer[i] = value;
         }
     }
 
@@ -71,8 +71,8 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
 
     public void Clear()
     {
-        Array.Clear(buffer, 0, buffer.Length);
-        head = 0;
+        Array.Clear(_buffer, 0, _buffer.Length);
+        _head = 0;
         Count = 0;
     }
 
@@ -80,20 +80,20 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
     {
         if (Count == 0) yield break;
 
-        var start = head & mask;
-        var end = (head + Count) & mask;
+        var start = _head & _mask;
+        var end = (_head + Count) & _mask;
 
         if (end > start)
         {
             // start...end
-            for (var i = start; i < end; i++) yield return buffer[i];
+            for (var i = start; i < end; i++) yield return _buffer[i];
         }
         else
         {
             // start...
-            for (var i = start; i < buffer.Length; i++) yield return buffer[i];
+            for (var i = start; i < _buffer.Length; i++) yield return _buffer[i];
             // 0...end
-            for (var i = 0; i < end; i++) yield return buffer[i];
+            for (var i = 0; i < end; i++) yield return _buffer[i];
         }
     }
 
@@ -158,19 +158,19 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
 
     public void AddLast(T item)
     {
-        if (Count == buffer.Length) EnsureCapacity();
+        if (Count == _buffer.Length) EnsureCapacity();
 
-        var index = (head + Count) & mask;
-        buffer[index] = item;
+        var index = (_head + Count) & _mask;
+        _buffer[index] = item;
         Count++;
     }
 
     public void AddFirst(T item)
     {
-        if (Count == buffer.Length) EnsureCapacity();
+        if (Count == _buffer.Length) EnsureCapacity();
 
-        head = (head - 1) & mask;
-        buffer[head] = item;
+        _head = (_head - 1) & _mask;
+        _buffer[_head] = item;
         Count++;
     }
 
@@ -178,9 +178,9 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
     {
         if (Count == 0) ThrowForEmpty();
 
-        var index = (head + Count - 1) & mask;
-        var v = buffer[index];
-        buffer[index] = default!;
+        var index = (_head + Count - 1) & _mask;
+        var v = _buffer[index];
+        _buffer[index] = default!;
         Count--;
         return v;
     }
@@ -189,45 +189,45 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
     {
         if (Count == 0) ThrowForEmpty();
 
-        var index = head & mask;
-        var v = buffer[index];
-        buffer[index] = default!;
-        head += 1;
+        var index = _head & _mask;
+        var v = _buffer[index];
+        _buffer[index] = default!;
+        _head += 1;
         Count--;
         return v;
     }
 
     private void EnsureCapacity()
     {
-        var newBuffer = new T[buffer.Length * 2];
+        var newBuffer = new T[_buffer.Length * 2];
 
-        var i = head & mask;
-        buffer.AsSpan(i).CopyTo(newBuffer);
+        var i = _head & _mask;
+        _buffer.AsSpan(i).CopyTo(newBuffer);
 
-        if (i != 0) buffer.AsSpan(0, i).CopyTo(newBuffer.AsSpan(buffer.Length - i));
+        if (i != 0) _buffer.AsSpan(0, i).CopyTo(newBuffer.AsSpan(_buffer.Length - i));
 
-        head = 0;
-        buffer = newBuffer;
-        mask = newBuffer.Length - 1;
+        _head = 0;
+        _buffer = newBuffer;
+        _mask = newBuffer.Length - 1;
     }
 
     public RingBufferSpan<T> GetSpan()
     {
         if (Count == 0) return new RingBufferSpan<T>(Array.Empty<T>(), Array.Empty<T>(), 0);
 
-        var start = head & mask;
-        var end = (head + Count) & mask;
+        var start = _head & _mask;
+        var end = (_head + Count) & _mask;
 
         if (end > start)
         {
-            var first = buffer.AsSpan(start, Count);
+            var first = _buffer.AsSpan(start, Count);
             var second = Array.Empty<T>().AsSpan();
             return new RingBufferSpan<T>(first, second, Count);
         }
         else
         {
-            var first = buffer.AsSpan(start, buffer.Length - start);
-            var second = buffer.AsSpan(0, end);
+            var first = _buffer.AsSpan(start, _buffer.Length - start);
+            var second = _buffer.AsSpan(0, end);
             return new RingBufferSpan<T>(first, second, Count);
         }
     }
@@ -236,21 +236,21 @@ public sealed class RingBuffer<T> : IList<T>, IReadOnlyList<T>
     {
         if (Count == 0) yield break;
 
-        var start = head & mask;
-        var end = (head + Count) & mask;
+        var start = _head & _mask;
+        var end = (_head + Count) & _mask;
 
         if (end > start)
         {
             // end...start
-            for (var i = end - 1; i >= start; i--) yield return buffer[i];
+            for (var i = end - 1; i >= start; i--) yield return _buffer[i];
         }
         else
         {
             // end...0
-            for (var i = end - 1; i >= 0; i--) yield return buffer[i];
+            for (var i = end - 1; i >= 0; i--) yield return _buffer[i];
 
             // ...start
-            for (var i = buffer.Length - 1; i >= start; i--) yield return buffer[i];
+            for (var i = _buffer.Length - 1; i >= start; i--) yield return _buffer[i];
         }
     }
 
@@ -314,29 +314,29 @@ public readonly ref struct RingBufferSpan<T>
 
     public ref struct Enumerator
     {
-        private ReadOnlySpan<T>.Enumerator firstEnumerator;
-        private ReadOnlySpan<T>.Enumerator secondEnumerator;
-        private bool useFirst;
+        private ReadOnlySpan<T>.Enumerator _firstEnumerator;
+        private ReadOnlySpan<T>.Enumerator _secondEnumerator;
+        private bool _useFirst;
 
         public Enumerator(RingBufferSpan<T> span)
         {
-            firstEnumerator = span.First.GetEnumerator();
-            secondEnumerator = span.Second.GetEnumerator();
-            useFirst = true;
+            _firstEnumerator = span.First.GetEnumerator();
+            _secondEnumerator = span.Second.GetEnumerator();
+            _useFirst = true;
         }
 
         public bool MoveNext()
         {
-            if (useFirst)
+            if (_useFirst)
             {
-                if (firstEnumerator.MoveNext())
+                if (_firstEnumerator.MoveNext())
                     return true;
-                useFirst = false;
+                _useFirst = false;
             }
 
-            return secondEnumerator.MoveNext();
+            return _secondEnumerator.MoveNext();
         }
 
-        public T Current => useFirst ? firstEnumerator.Current : secondEnumerator.Current;
+        public T Current => _useFirst ? _firstEnumerator.Current : _secondEnumerator.Current;
     }
 }

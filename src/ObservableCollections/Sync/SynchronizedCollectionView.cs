@@ -32,7 +32,7 @@ public abstract class SynchronizedCollectionView<T, TView, TList> : Synchronized
     {
         lock (SyncRoot)
         {
-            this.filter = filter;
+            this.Filter = filter;
             var i = 0;
             foreach (var (value, view) in View)
                 if (invokeAddEventForCurrentElements)
@@ -46,7 +46,7 @@ public abstract class SynchronizedCollectionView<T, TView, TList> : Synchronized
     {
         lock (SyncRoot)
         {
-            filter = SynchronizedViewFilter<T, TView>.Null;
+            Filter = SynchronizedViewFilter<T, TView>._null;
             if (resetAction != null)
                 foreach (var (item, view) in View)
                     resetAction(item, view);
@@ -58,7 +58,7 @@ public abstract class SynchronizedCollectionView<T, TView, TList> : Synchronized
         lock (SyncRoot)
         {
             foreach (var item in View)
-                if (filter.IsMatch(item.Item1, item.Item2))
+                if (Filter.IsMatch(item.Item1, item.Item2))
                     yield return item;
         }
     }

@@ -15,12 +15,12 @@ public sealed partial class ObservableRingBuffer<T>
     // used with ObservableFixedSizeRingBuffer
     internal sealed class View<TView> : SynchronizedCollectionView<T, TView, RingBuffer<(T, TView)>>
     {
-        private readonly Func<T, TView> selector;
+        private readonly Func<T, TView> _selector;
 
         public View(IObservableCollection<T> source, Func<T, TView> selector)
             : base(source, new RingBuffer<(T, TView)>(source.Select(x => (x, selector(x)))))
         {
-            this.selector = selector;
+            this._selector = selector;
         }
 
         protected override void SourceCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
@@ -39,17 +39,17 @@ public sealed partial class ObservableRingBuffer<T>
                             // AddFirst
                             if (e.IsSingleItem)
                             {
-                                var v = (e.NewItem, selector(e.NewItem));
+                                var v = (e.NewItem, _selector(e.NewItem));
                                 View.AddFirst(v);
-                                filter.InvokeOnAdd(v, 0);
+                                Filter.InvokeOnAdd(v, 0);
                             }
                             else
                             {
                                 foreach (var item in e.NewItems)
                                 {
-                                    var v = (item, selector(item));
+                                    var v = (item, _selector(item));
                                     View.AddFirst(v);
-                                    filter.InvokeOnAdd(v, 0);
+                                    Filter.InvokeOnAdd(v, 0);
                                 }
                             }
                         }
@@ -58,17 +58,17 @@ public sealed partial class ObservableRingBuffer<T>
                             // AddLast
                             if (e.IsSingleItem)
                             {
-                                var v = (e.NewItem, selector(e.NewItem));
+                                var v = (e.NewItem, _selector(e.NewItem));
                                 View.AddLast(v);
-                                filter.InvokeOnAdd(v, View.Count - 1);
+                                Filter.InvokeOnAdd(v, View.Count - 1);
                             }
                             else
                             {
                                 foreach (var item in e.NewItems)
                                 {
-                                    var v = (item, selector(item));
+                                    var v = (item, _selector(item));
                                     View.AddLast(v);
-                                    filter.InvokeOnAdd(v, View.Count - 1);
+                                    Filter.InvokeOnAdd(v, View.Count - 1);
                                 }
                             }
                         }
@@ -82,14 +82,14 @@ public sealed partial class ObservableRingBuffer<T>
                             if (e.IsSingleItem)
                             {
                                 var v = View.RemoveFirst();
-                                filter.InvokeOnRemove(v, 0);
+                                Filter.InvokeOnRemove(v, 0);
                             }
                             else
                             {
                                 for (var i = 0; i < e.OldItems.Length; i++)
                                 {
                                     var v = View.RemoveFirst();
-                                    filter.InvokeOnRemove(v, 0);
+                                    Filter.InvokeOnRemove(v, 0);
                                 }
                             }
                         }
@@ -100,7 +100,7 @@ public sealed partial class ObservableRingBuffer<T>
                             {
                                 var index = View.Count - 1;
                                 var v = View.RemoveLast();
-                                filter.InvokeOnRemove(v, index);
+                                Filter.InvokeOnRemove(v, index);
                             }
                             else
                             {
@@ -108,7 +108,7 @@ public sealed partial class ObservableRingBuffer<T>
                                 {
                                     var index = View.Count - 1;
                                     var v = View.RemoveLast();
-                                    filter.InvokeOnRemove(v, index);
+                                    Filter.InvokeOnRemove(v, index);
                                 }
                             }
                         }
@@ -116,15 +116,15 @@ public sealed partial class ObservableRingBuffer<T>
                         break;
                     case NotifyCollectionChangedAction.Reset:
                         View.Clear();
-                        filter.InvokeOnReset();
+                        Filter.InvokeOnReset();
                         break;
                     case NotifyCollectionChangedAction.Replace:
                         // range is not supported
                     {
                         var ov = View[e.OldStartingIndex];
-                        var v = (e.NewItem, selector(e.NewItem));
+                        var v = (e.NewItem, _selector(e.NewItem));
                         View[e.NewStartingIndex] = v;
-                        filter.InvokeOnReplace(v, ov, e.NewStartingIndex);
+                        Filter.InvokeOnReplace(v, ov, e.NewStartingIndex);
                         break;
                     }
                     case NotifyCollectionChangedAction.Move:

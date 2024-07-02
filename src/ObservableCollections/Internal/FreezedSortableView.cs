@@ -10,8 +10,6 @@ internal sealed class FreezedSortableView<T, TView> : FreezedView<T, TView>, ISo
     {
     }
 
-    public object SyncRoot { get; } = new();
-
     public void Sort(IComparer<T> comparer)
     {
         Array.Sort(Collection, new TypeComparerKey<T, TView>(comparer));

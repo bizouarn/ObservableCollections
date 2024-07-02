@@ -12,21 +12,21 @@ namespace ObservableCollections.Internal;
 /// </summary>
 internal struct CloneCollection<T> : IDisposable
 {
-    private T[]? array;
-    private readonly int length;
+    private T[]? _array;
+    private readonly int _length;
 
-    public ReadOnlySpan<T> Span => array.AsSpan(0, length);
+    public ReadOnlySpan<T> Span => _array.AsSpan(0, _length);
 
     public IEnumerable<T> AsEnumerable()
     {
-        return new EnumerableCollection(array, length);
+        return new EnumerableCollection(_array, _length);
     }
 
     public CloneCollection(T item)
     {
-        array = ArrayPool<T>.Shared.Rent(1);
-        length = 1;
-        array[0] = item;
+        _array = ArrayPool<T>.Shared.Rent(1);
+        _length = 1;
+        _array[0] = item;
     }
 
     public CloneCollection(IEnumerable<T> source)
@@ -45,8 +45,8 @@ internal struct CloneCollection<T> : IDisposable
                 foreach (var item in source) array[i++] = item;
             }
 
-            this.array = array;
-            length = count;
+            this._array = array;
+            _length = count;
         }
         else
         {
@@ -59,8 +59,8 @@ internal struct CloneCollection<T> : IDisposable
                 array[i++] = item;
             }
 
-            this.array = array;
-            length = i;
+            this._array = array;
+            _length = i;
         }
     }
 
@@ -68,8 +68,8 @@ internal struct CloneCollection<T> : IDisposable
     {
         var array = ArrayPool<T>.Shared.Rent(source.Length);
         source.CopyTo(array);
-        this.array = array;
-        length = source.Length;
+        this._array = array;
+        _length = source.Length;
     }
 
     private static void TryEnsureCapacity(ref T[] array, int index)
@@ -85,34 +85,34 @@ internal struct CloneCollection<T> : IDisposable
 
     public void Dispose()
     {
-        if (array != null)
+        if (_array != null)
         {
-            ArrayPool<T>.Shared.Return(array, RuntimeHelpersEx.IsReferenceOrContainsReferences<T>());
-            array = null;
+            ArrayPool<T>.Shared.Return(_array, RuntimeHelpersEx.IsReferenceOrContainsReferences<T>());
+            _array = null;
         }
     }
 
     // Optimize to use Count and CopyTo
     private class EnumerableCollection : ICollection<T>
     {
-        private readonly T[] array;
-        private readonly int count;
+        private readonly T[] _array;
+        private readonly int _count;
 
         public EnumerableCollection(T[]? array, int count)
         {
             if (array == null)
             {
-                this.array = Array.Empty<T>();
-                this.count = 0;
+                this._array = Array.Empty<T>();
+                this._count = 0;
             }
             else
             {
-                this.array = array;
-                this.count = count;
+                this._array = array;
+                this._count = count;
             }
         }
 
-        public int Count => count;
+        public int Count => _count;
 
         public bool IsReadOnly => true;
 
@@ -133,12 +133,12 @@ internal struct CloneCollection<T> : IDisposable
 
         public void CopyTo(T[] dest, int destIndex)
         {
-            Array.Copy(array, 0, dest, destIndex, count);
+            Array.Copy(_array, 0, dest, destIndex, _count);
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            for (var i = 0; i < count; i++) yield return array[i];
+            for (var i = 0; i < _count; i++) yield return _array[i];
         }
 
         public bool Remove(T item)

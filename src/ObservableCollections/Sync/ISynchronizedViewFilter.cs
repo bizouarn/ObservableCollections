@@ -36,7 +36,7 @@ public class SynchronizedViewFilter<T, TView>(
     Action<SynchronizedViewChangedEventArgs<T, TView>>? onCollectionChanged)
     : ISynchronizedViewFilter<T, TView>
 {
-    public static readonly ISynchronizedViewFilter<T, TView> Null = new NullViewFilter();
+    public static readonly ISynchronizedViewFilter<T, TView> _null = new NullViewFilter();
 
     public bool IsMatch(T value, TView view)
     {
@@ -101,7 +101,7 @@ public static class SynchronizedViewFilterExtensions
 
     public static bool IsNullFilter<T, TView>(this ISynchronizedViewFilter<T, TView> filter)
     {
-        return filter == SynchronizedViewFilter<T, TView>.Null;
+        return filter == SynchronizedViewFilter<T, TView>._null;
     }
 
 

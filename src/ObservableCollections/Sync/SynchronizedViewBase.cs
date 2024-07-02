@@ -9,12 +9,12 @@ namespace ObservableCollections.Sync;
 public abstract class SynchronizedViewBase<T, TView> : Synchronized, ISynchronizedView<T, TView>
 {
     private readonly IObservableCollection<T> _source;
-    protected ISynchronizedViewFilter<T, TView> filter;
+    protected ISynchronizedViewFilter<T, TView> Filter;
 
     public SynchronizedViewBase(IObservableCollection<T> source)
     {
         _source = source;
-        filter = SynchronizedViewFilter<T, TView>.Null;
+        Filter = SynchronizedViewFilter<T, TView>._null;
         lock (source.SyncRoot)
         {
             _source.CollectionChanged += SourceCollectionChanged;
@@ -27,7 +27,7 @@ public abstract class SynchronizedViewBase<T, TView> : Synchronized, ISynchroniz
         {
             lock (SyncRoot)
             {
-                return filter;
+                return Filter;
             }
         }
     }

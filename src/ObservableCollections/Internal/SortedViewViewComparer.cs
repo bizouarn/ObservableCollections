@@ -9,30 +9,30 @@ namespace ObservableCollections.Internal;
 internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, TView>
     where TKey : notnull
 {
-    private readonly Func<T, TKey> identitySelector;
-    private readonly SortedList<(TView View, TKey Key), (T Value, TView View)> list;
-    private readonly Func<T, TView> transform;
-    private readonly Dictionary<TKey, TView> viewMap; // view-map needs to use in remove.
+    private readonly Func<T, TKey> _identitySelector;
+    private readonly SortedList<(TView View, TKey Key), (T Value, TView View)> _list;
+    private readonly Func<T, TView> _transform;
+    private readonly Dictionary<TKey, TView> _viewMap; // view-map needs to use in remove.
 
     public SortedViewViewComparer(IObservableCollection<T> source, Func<T, TKey> identitySelector,
         Func<T, TView> transform, IComparer<TView> comparer)
         : base(source)
     {
-        this.identitySelector = identitySelector;
-        this.transform = transform;
+        this._identitySelector = identitySelector;
+        this._transform = transform;
         lock (source.SyncRoot)
         {
             var dict = new Dictionary<(TView, TKey), (T, TView)>(source.Count);
-            viewMap = new Dictionary<TKey, TView>();
+            _viewMap = new Dictionary<TKey, TView>();
             foreach (var value in source)
             {
                 var view = transform(value);
                 var id = identitySelector(value);
                 dict.Add((view, id), (value, view));
-                viewMap.Add(id, view);
+                _viewMap.Add(id, view);
             }
 
-            list = new SortedList<(TView View, TKey Key), (T Value, TView View)>(dict, new Comparer(comparer));
+            _list = new SortedList<(TView View, TKey Key), (T Value, TView View)>(dict, new Comparer(comparer));
         }
     }
 
@@ -42,7 +42,7 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
         {
             lock (SyncRoot)
             {
-                return list.Count;
+                return _list.Count;
             }
         }
     }
@@ -52,9 +52,9 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
     {
         lock (SyncRoot)
         {
-            this.filter = filter;
+            this.Filter = filter;
             var i = 0;
-            foreach (var (_, (value, view)) in list)
+            foreach (var (_, (value, view)) in _list)
                 if (invokeAddEventForCurrentElements)
                     filter.InvokeOnAdd(value, view, i++);
                 else
@@ -66,9 +66,9 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
     {
         lock (SyncRoot)
         {
-            filter = SynchronizedViewFilter<T, TView>.Null;
+            Filter = SynchronizedViewFilter<T, TView>._null;
             if (resetAction != null)
-                foreach (var (_, (value, view)) in list)
+                foreach (var (_, (value, view)) in _list)
                     resetAction(value, view);
         }
     }
@@ -77,8 +77,8 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
     {
         lock (SyncRoot)
         {
-            foreach (var item in list)
-                if (filter.IsMatch(item.Value.Value, item.Value.View))
+            foreach (var item in _list)
+                if (Filter.IsMatch(item.Value.Value, item.Value.View))
                     yield return item.Value;
         }
     }
@@ -95,23 +95,23 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
                     if (e.IsSingleItem)
                     {
                         var value = e.NewItem;
-                        var view = transform(value);
-                        var id = identitySelector(value);
-                        list.Add((view, id), (value, view));
-                        viewMap.Add(id, view);
-                        var index = list.IndexOfKey((view, id));
-                        filter.InvokeOnAdd(value, view, index);
+                        var view = _transform(value);
+                        var id = _identitySelector(value);
+                        _list.Add((view, id), (value, view));
+                        _viewMap.Add(id, view);
+                        var index = _list.IndexOfKey((view, id));
+                        Filter.InvokeOnAdd(value, view, index);
                     }
                     else
                     {
                         foreach (var value in e.NewItems)
                         {
-                            var view = transform(value);
-                            var id = identitySelector(value);
-                            list.Add((view, id), (value, view));
-                            viewMap.Add(id, view);
-                            var index = list.IndexOfKey((view, id));
-                            filter.InvokeOnAdd(value, view, index);
+                            var view = _transform(value);
+                            var id = _identitySelector(value);
+                            _list.Add((view, id), (value, view));
+                            _viewMap.Add(id, view);
+                            var index = _list.IndexOfKey((view, id));
+                            Filter.InvokeOnAdd(value, view, index);
                         }
                     }
 
@@ -122,15 +122,15 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
                     if (e.IsSingleItem)
                     {
                         var value = e.OldItem;
-                        var id = identitySelector(value);
-                        if (viewMap.Remove(id, out var view))
+                        var id = _identitySelector(value);
+                        if (_viewMap.Remove(id, out var view))
                         {
                             var key = (view, id);
-                            if (list.TryGetValue(key, out var v))
+                            if (_list.TryGetValue(key, out var v))
                             {
-                                var index = list.IndexOfKey(key);
-                                list.RemoveAt(index);
-                                filter.InvokeOnRemove(v, index);
+                                var index = _list.IndexOfKey(key);
+                                _list.RemoveAt(index);
+                                Filter.InvokeOnRemove(v, index);
                             }
                         }
                     }
@@ -138,15 +138,15 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
                     {
                         foreach (var value in e.OldItems)
                         {
-                            var id = identitySelector(value);
-                            if (viewMap.Remove(id, out var view))
+                            var id = _identitySelector(value);
+                            if (_viewMap.Remove(id, out var view))
                             {
                                 var key = (view, id);
-                                if (list.TryGetValue(key, out var v))
+                                if (_list.TryGetValue(key, out var v))
                                 {
-                                    var index = list.IndexOfKey((view, id));
-                                    list.RemoveAt(index);
-                                    filter.InvokeOnRemove(v, index);
+                                    var index = _list.IndexOfKey((view, id));
+                                    _list.RemoveAt(index);
+                                    Filter.InvokeOnRemove(v, index);
                                 }
                             }
                         }
@@ -158,42 +158,42 @@ internal class SortedViewViewComparer<T, TKey, TView> : SynchronizedViewBase<T, 
                     // Replace is remove old item and insert new item.
                 {
                     var oldValue = e.OldItem;
-                    var oldId = identitySelector(oldValue);
+                    var oldId = _identitySelector(oldValue);
                     var oldIndex = -1;
-                    if (viewMap.Remove(oldId, out var oldView))
+                    if (_viewMap.Remove(oldId, out var oldView))
                     {
                         var oldKey = (oldView, oldId);
-                        oldIndex = list.IndexOfKey(oldKey);
-                        if (oldIndex > -1) list.RemoveAt(oldIndex);
+                        oldIndex = _list.IndexOfKey(oldKey);
+                        if (oldIndex > -1) _list.RemoveAt(oldIndex);
                     }
 
                     var value = e.NewItem;
-                    var view = transform(value);
-                    var id = identitySelector(value);
-                    list.Add((view, id), (value, view));
-                    viewMap.Add(id, view);
+                    var view = _transform(value);
+                    var id = _identitySelector(value);
+                    _list.Add((view, id), (value, view));
+                    _viewMap.Add(id, view);
 
-                    var index = list.IndexOfKey((view, id));
-                    filter.InvokeOnReplace(value, view, oldValue, oldView!, index, oldIndex);
+                    var index = _list.IndexOfKey((view, id));
+                    Filter.InvokeOnReplace(value, view, oldValue, oldView!, index, oldIndex);
                     break;
                 }
                 case NotifyCollectionChangedAction.Move:
                     // Move(index change) does not affect soreted dict.
                 {
                     var value = e.OldItem;
-                    var id = identitySelector(value);
-                    if (viewMap.TryGetValue(id, out var view))
+                    var id = _identitySelector(value);
+                    if (_viewMap.TryGetValue(id, out var view))
                     {
-                        var index = list.IndexOfKey((view, id));
-                        filter.InvokeOnMove(value, view, index, index);
+                        var index = _list.IndexOfKey((view, id));
+                        Filter.InvokeOnMove(value, view, index, index);
                     }
 
                     break;
                 }
                 case NotifyCollectionChangedAction.Reset:
-                    list.Clear();
-                    viewMap.Clear();
-                    filter.InvokeOnReset();
+                    _list.Clear();
+                    _viewMap.Clear();
+                    Filter.InvokeOnReset();
                     break;
             }
 

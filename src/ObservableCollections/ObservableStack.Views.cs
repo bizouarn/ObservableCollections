@@ -15,12 +15,12 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
 
     private class View<TView> : SynchronizedCollectionView<T, TView, Stack<(T, TView)>>
     {
-        private readonly Func<T, TView> selector;
+        private readonly Func<T, TView> _selector;
 
         public View(ObservableStack<T> source, Func<T, TView> selector)
             : base(source, new Stack<(T, TView)>(source.Source.Select(x => (x, selector(x)))))
         {
-            this.selector = selector;
+            this._selector = selector;
         }
 
         public override void AttachFilter(ISynchronizedViewFilter<T, TView> filter,
@@ -28,7 +28,7 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
         {
             lock (SyncRoot)
             {
-                this.filter = filter;
+                this.Filter = filter;
                 foreach (var (value, view) in View)
                     if (invokeAddEventForCurrentElements)
                         filter.InvokeOnAdd(value, view, 0);
@@ -47,17 +47,17 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
                         // Add(Push, PushRange)
                         if (e.IsSingleItem)
                         {
-                            var v = (e.NewItem, selector(e.NewItem));
+                            var v = (e.NewItem, _selector(e.NewItem));
                             View.Push(v);
-                            filter.InvokeOnAdd(v, 0);
+                            Filter.InvokeOnAdd(v, 0);
                         }
                         else
                         {
                             foreach (var item in e.NewItems)
                             {
-                                var v = (item, selector(item));
+                                var v = (item, _selector(item));
                                 View.Push(v);
-                                filter.InvokeOnAdd(v, 0);
+                                Filter.InvokeOnAdd(v, 0);
                             }
                         }
 
@@ -67,7 +67,7 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
                         if (e.IsSingleItem)
                         {
                             var v = View.Pop();
-                            filter.InvokeOnRemove(v.Item1, v.Item2, 0);
+                            Filter.InvokeOnRemove(v.Item1, v.Item2, 0);
                         }
                         else
                         {
@@ -75,14 +75,14 @@ public sealed partial class ObservableStack<T> : IObservableCollection<T>
                             for (var i = 0; i < len; i++)
                             {
                                 var v = View.Pop();
-                                filter.InvokeOnRemove(v.Item1, v.Item2, 0);
+                                Filter.InvokeOnRemove(v.Item1, v.Item2, 0);
                             }
                         }
 
                         break;
                     case NotifyCollectionChangedAction.Reset:
                         View.Clear();
-                        filter.InvokeOnReset();
+                        Filter.InvokeOnReset();
                         break;
                     case NotifyCollectionChangedAction.Replace:
                     case NotifyCollectionChangedAction.Move:

@@ -8,39 +8,39 @@ namespace ObservableCollections.Internal;
 // internal ref struct ResizableArray<T>
 internal struct ResizableArray<T> : IDisposable
 {
-    private T[]? array;
-    private int count;
+    private T[]? _array;
+    private int _count;
 
-    public ReadOnlySpan<T> Span => array.AsSpan(0, count);
+    public ReadOnlySpan<T> Span => _array.AsSpan(0, _count);
 
     public ResizableArray(int initialCapacity)
     {
-        array = ArrayPool<T>.Shared.Rent(initialCapacity);
-        count = 0;
+        _array = ArrayPool<T>.Shared.Rent(initialCapacity);
+        _count = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(T item)
     {
-        if (array == null) Throw();
-        if (array.Length == count) EnsureCapacity();
-        array[count++] = item;
+        if (_array == null) Throw();
+        if (_array.Length == _count) EnsureCapacity();
+        _array[_count++] = item;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void EnsureCapacity()
     {
-        var newArray = array.AsSpan().ToArray();
-        ArrayPool<T>.Shared.Return(array!, RuntimeHelpersEx.IsReferenceOrContainsReferences<T>());
-        array = newArray;
+        var newArray = _array.AsSpan().ToArray();
+        ArrayPool<T>.Shared.Return(_array!, RuntimeHelpersEx.IsReferenceOrContainsReferences<T>());
+        _array = newArray;
     }
 
     public void Dispose()
     {
-        if (array != null)
+        if (_array != null)
         {
-            ArrayPool<T>.Shared.Return(array, RuntimeHelpersEx.IsReferenceOrContainsReferences<T>());
-            array = null;
+            ArrayPool<T>.Shared.Return(_array, RuntimeHelpersEx.IsReferenceOrContainsReferences<T>());
+            _array = null;
         }
     }
 

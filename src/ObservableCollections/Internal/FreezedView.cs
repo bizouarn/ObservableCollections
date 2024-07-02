@@ -10,12 +10,12 @@ namespace ObservableCollections.Internal;
 
 internal class FreezedView<T, TView> : FreezedCollection<(T, TView)[], (T, TView)>, ISynchronizedView<T, TView>
 {
-    private ISynchronizedViewFilter<T, TView> filter;
+    private ISynchronizedViewFilter<T, TView> _filter;
 
     public FreezedView(IEnumerable<T> source, Func<T, TView> selector) : base(source.Select(x => (x, selector(x)))
         .ToArray())
     {
-        filter = SynchronizedViewFilter<T, TView>.Null;
+        _filter = SynchronizedViewFilter<T, TView>._null;
     }
 
     public object SyncRoot { get; } = new();
@@ -26,7 +26,7 @@ internal class FreezedView<T, TView> : FreezedCollection<(T, TView)[], (T, TView
         {
             lock (SyncRoot)
             {
-                return filter;
+                return _filter;
             }
         }
     }
@@ -38,7 +38,7 @@ internal class FreezedView<T, TView> : FreezedCollection<(T, TView)[], (T, TView
     {
         lock (SyncRoot)
         {
-            this.filter = filter;
+            this._filter = filter;
             for (var i = 0; i < Collection.Length; i++)
             {
                 var (value, view) = Collection[i];
@@ -54,7 +54,7 @@ internal class FreezedView<T, TView> : FreezedCollection<(T, TView)[], (T, TView
     {
         lock (SyncRoot)
         {
-            filter = SynchronizedViewFilter<T, TView>.Null;
+            _filter = SynchronizedViewFilter<T, TView>._null;
             if (resetAction != null)
                 foreach (var (item, view) in Collection)
                     resetAction(item, view);
@@ -66,7 +66,7 @@ internal class FreezedView<T, TView> : FreezedCollection<(T, TView)[], (T, TView
         lock (SyncRoot)
         {
             foreach (var item in Collection)
-                if (filter.IsMatch(item.Item1, item.Item2))
+                if (_filter.IsMatch(item.Item1, item.Item2))
                     yield return item;
         }
     }
