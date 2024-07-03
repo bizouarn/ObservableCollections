@@ -71,11 +71,7 @@ namespace ObservableCollections.Tests
         public void ViewSorted()
         {
             var list = new ObservableList<int>();
-            var view1 = list.CreateSortedView(x => x, x => new ViewContainer<int>(x), comparer: Comparer<int>.Default);
-            var view2 = list.CreateSortedView(x => x, x => new ViewContainer<int>(x), viewComparer: Comparer<ViewContainer<int>>.Default);
-            var view3 = list.CreateSortedView(x => x, x => new ViewContainer<int>(x), x => x, ascending: true);
-            var view4 = list.CreateSortedView(x => x, x => new ViewContainer<int>(x), x => x, ascending: false);
-
+            
             list.Add(10); // 0
             list.Add(50); // 1
             list.Add(30); // 2
@@ -85,12 +81,6 @@ namespace ObservableCollections.Tests
             void Equal(params int[] expected)
             {
                 list.Should().Equal(expected);
-
-                var sorted = expected.OrderBy(x => x).ToArray();
-                view1.Select(x => x.Value).Should().Equal(sorted);
-                view2.Select(x => x.View).Should().Equal(sorted.Select(x => new ViewContainer<int>(x)));
-                view3.Select(x => x.Value).Should().Equal(sorted);
-                view4.Select(x => x.Value).Should().Equal(expected.OrderByDescending(x => x).ToArray());
             }
 
             Equal(10, 50, 30, 20, 40);
@@ -125,15 +115,10 @@ namespace ObservableCollections.Tests
         {
             var list = new FreezedList<int>(new[] { 10, 20, 50, 30, 40, 60 });
 
-            var view = list.CreateSortableView(x => new ViewContainer<int>(x));
+            var view = list.CreateView(x => new ViewContainer<int>(x));
 
-            view.Sort(x => x, true);
             view.Select(x => x.Value).Should().Equal(10, 20, 30, 40, 50, 60);
             view.Select(x => x.View).Should().Equal(10, 20, 30, 40, 50, 60);
-
-            view.Sort(x => x, false);
-            view.Select(x => x.Value).Should().Equal(60, 50, 40, 30, 20, 10);
-            view.Select(x => x.View).Should().Equal(60, 50, 40, 30, 20, 10);
         }
 
         [Fact]
@@ -141,16 +126,12 @@ namespace ObservableCollections.Tests
         {
             var list = new ObservableList<int>();
             var view1 = list.CreateView(x => new ViewContainer<int>(x));
-            var view2 = list.CreateSortedView(x => x, x => new ViewContainer<int>(x), comparer: Comparer<int>.Default);
-            var view3 = list.CreateSortedView(x => x, x => new ViewContainer<int>(x), viewComparer: Comparer<ViewContainer<int>>.Default);
             list.AddRange(new[] { 10, 21, 30, 44, 45, 66, 90 });
 
             var filter1 = new TestFilter<int>((x, v) => x % 2 == 0);
             var filter2 = new TestFilter<int>((x, v) => x % 2 == 0);
             var filter3 = new TestFilter<int>((x, v) => x % 2 == 0);
             view1.AttachFilter(filter1);
-            view2.AttachFilter(filter2);
-            view3.AttachFilter(filter3);
 
             filter1.CalledWhenTrue.Select(x => x.Item1).Should().Equal(10, 30, 44, 66, 90);
             filter2.CalledWhenTrue.Select(x => x.Item1).Should().Equal(10, 30, 44, 66, 90);
@@ -161,8 +142,6 @@ namespace ObservableCollections.Tests
             filter3.CalledWhenFalse.Select(x => x.Item1).Should().Equal(21, 45);
 
             view1.Select(x => x.Value).Should().Equal(10, 30, 44, 66, 90);
-            view2.Select(x => x.Value).Should().Equal(10, 30, 44, 66, 90);
-            view3.Select(x => x.Value).Should().Equal(10, 30, 44, 66, 90);
 
             filter1.Clear();
             filter2.Clear();

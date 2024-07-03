@@ -31,10 +31,4 @@ public class FreezedCollection<TCol, TSub> : IFreezedCollection<TSub>, IEnumerab
     {
         return new FreezedView<TSub, TView>(Collection, transform);
     }
-
-    public ISortableSynchronizedView<TSub, TView> CreateSortableView<TView>(
-        Func<TSub, TView> transform)
-    {
-        return new FreezedSortableView<TSub, TView>(Collection, transform);
-    }
 }

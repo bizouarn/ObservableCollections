@@ -6,48 +6,13 @@ namespace ObservableCollections.Tests;
 public class SortedViewViewComparerTest
 {
     [Fact]
-    public void Sort()
-    {
-        var list = new ObservableList<int>();
-        var sortedView = list.CreateSortedView(
-            x => x,
-            x => new ViewContainer<int>(x),
-            Comparer<ViewContainer<int>>.Default);
-
-        list.Add(10);
-        list.Add(50);
-        list.Add(30);
-        list.Add(20);
-        list.Add(40);
-
-        using var e = sortedView.GetEnumerator();
-        e.MoveNext().Should().BeTrue();
-        e.Current.Value.Should().Be(10);
-        e.MoveNext().Should().BeTrue();
-        e.Current.Value.Should().Be(20);
-        e.MoveNext().Should().BeTrue();
-        e.Current.Value.Should().Be(30);
-        e.MoveNext().Should().BeTrue();
-        e.Current.Value.Should().Be(40);
-        e.MoveNext().Should().BeTrue();
-        e.Current.Value.Should().Be(50);
-        e.MoveNext().Should().BeFalse();
-    }
-    
-    [Fact]
     public void ObserveIndex()
     {
         var list = new ObservableList<int>();
-        var sortedView = list.CreateSortedView(
-            x => x,
-            x => new ViewContainer<int>(x),
-            Comparer<ViewContainer<int>>.Default);
 
         var filter = new TestFilter<int>((value, view) => value % 2 == 0);
         list.Add(50);
         list.Add(10);
-        
-        sortedView.AttachFilter(filter);
         
         list.Add(20);
         filter.CalledOnCollectionChanged[0].Action.Should().Be(NotifyCollectionChangedAction.Add);

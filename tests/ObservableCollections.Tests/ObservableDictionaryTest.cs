@@ -43,9 +43,7 @@ namespace ObservableCollections.Tests
         public void ViewSorted()
         {
             var dict = new ObservableDictionary<int, int>();
-            var view1 = dict.CreateSortedView(x => x.Key, x => new ViewContainer<int>(x.Value), x => x.Value, true);
-            var view2 = dict.CreateSortedView(x => x.Key, x => new ViewContainer<int>(x.Value), x => x.Value, false);
-
+            
             dict.Add(10, 10); // 0
             dict.Add(50, 50); // 1
             dict.Add(30, 30); // 2
@@ -55,8 +53,6 @@ namespace ObservableCollections.Tests
             void Equal(params int[] expected)
             {
                 dict.Select(x => x.Value).OrderBy(x => x).Should().Equal(expected);
-                view1.Select(x => x.Value.Value).Should().Equal(expected);
-                view2.Select(x => x.Value.Value).Should().Equal(expected.OrderByDescending(x => x));
             }
 
             Equal(10, 20, 30, 40, 50);
@@ -87,15 +83,10 @@ namespace ObservableCollections.Tests
                 [60] = 60
             });
 
-            var view = dict.CreateSortableView(x => new ViewContainer<int>(x.Value));
+            var view = dict.CreateView(x => new ViewContainer<int>(x.Value));
 
-            view.Sort(x => x.Key, true);
             view.Select(x => x.Value.Value).Should().Equal(10, 20, 30, 40, 50, 60);
             view.Select(x => x.View).Should().Equal(10, 20, 30, 40, 50, 60);
-
-            view.Sort(x => x.Key, false);
-            view.Select(x => x.Value.Value).Should().Equal(60, 50, 40, 30, 20, 10);
-            view.Select(x => x.View).Should().Equal(60, 50, 40, 30, 20, 10);
         }
 
         [Fact]
@@ -103,8 +94,6 @@ namespace ObservableCollections.Tests
         {
             var dict = new ObservableDictionary<int, int>();
             var view1 = dict.CreateView(x => new ViewContainer<int>(x.Value));
-            var view2 = dict.CreateSortedView(x => x.Key, x => new ViewContainer<int>(x.Value), x => x.Value, true);
-            var view3 = dict.CreateSortedView(x => new ViewContainer<int>(x.Value), x => x.Value, viewComparer: Comparer<ViewContainer<int>>.Default);
             var filter1 = new TestFilter2<int>((x, v) => x.Value % 2 == 0);
             var filter2 = new TestFilter2<int>((x, v) => x.Value % 2 == 0);
             var filter3 = new TestFilter2<int>((x, v) => x.Value % 2 == 0);
@@ -116,9 +105,7 @@ namespace ObservableCollections.Tests
             dict.Add(40, -40); // 4
 
             view1.AttachFilter(filter1);
-            view2.AttachFilter(filter2);
-            view3.AttachFilter(filter3);
-
+            
             filter1.CalledWhenTrue.Select(x => x.Item1.Value).Should().Equal(-12, -34, -40);
             filter2.CalledWhenTrue.Select(x => x.Item1.Value).Should().Equal(-40, -34, -12);
             filter3.CalledWhenTrue.Select(x => x.Item1.Value).Should().Equal(-40, -34, -12);
